@@ -29,7 +29,7 @@ export function StatisticsWidget({ language, statistics }: StatisticsWidgetProps
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <MetricTile icon={<Users />} label={labels.distinctGuests} value={statistics ? compactNumber(distinctGuests) : "--"} tone="green" />
+        <MetricTile icon={<Users />} label={labels.distinctGuests(distinctGuests)} value={statistics ? compactNumber(distinctGuests) : "--"} tone="green" />
         <MetricTile icon={<WandSparkles />} label={labels.parserUses(parserUses)} value={statistics ? compactNumber(parserUses) : "--"} tone="blue" />
       </div>
     </aside>
