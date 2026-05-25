@@ -1,0 +1,23 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="18" y="18" width="220" height="220" rx="64" fill="url(#feecoTile)"/>
+  <rect x="18" y="18" width="220" height="220" rx="64" stroke="url(#feecoShine)" stroke-width="3"/>
+  <path d="M67 174H185" stroke="#3278FF" stroke-opacity=".18" stroke-width="18" stroke-linecap="round"/>
+  <path d="M70 154L109 120L140 138L188 82" stroke="url(#feecoTrend)" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="188" cy="82" r="17" fill="#3278FF"/>
+  <circle cx="188" cy="82" r="7" fill="#F8FBFF"/>
+  <defs>
+    <linearGradient id="feecoTile" x1="42" y1="34" x2="217" y2="225" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset=".44" stop-color="#DBEAFE"/>
+      <stop offset="1" stop-color="#BFF4D8"/>
+    </linearGradient>
+    <linearGradient id="feecoTrend" x1="91" y1="186" x2="197" y2="104" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2CA36F"/>
+      <stop offset="1" stop-color="#3278FF"/>
+    </linearGradient>
+    <linearGradient id="feecoShine" x1="53" y1="24" x2="213" y2="234" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF" stop-opacity=".9"/>
+      <stop offset="1" stop-color="#3278FF" stop-opacity=".12"/>
+    </linearGradient>
+  </defs>
+</svg>

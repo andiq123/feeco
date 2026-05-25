@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from "next/server";
+import { enforceRateLimit } from "@/lib/rate-limit";
+
+const DEFAULT_BACKEND_URL = "http://localhost:8080";
+
+export async function proxyMultipartRequest(request: NextRequest, backendPath: string): Promise<NextResponse> {
+  const rateLimitResponse = enforceRateLimit(request);
+  if (rateLimitResponse) {
+    return rateLimitResponse;
+  }
+
+  const backendURL = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL;
+  const apiKey = process.env.BACKEND_API_KEY;
+  const formData = await request.formData();
+  const headers = new Headers();
+
+  if (apiKey) {
+    headers.set("X-API-Key", apiKey);
+  }
+
+  const response = await fetch(`${backendURL}${backendPath}`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  const body = await response.text();
+  return new NextResponse(body, {
+    status: response.status,
+    headers: {
+      "content-type": response.headers.get("content-type") ?? "application/json",
+    },
+  });
+}

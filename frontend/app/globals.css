@@ -1,0 +1,529 @@
+@import "tailwindcss";
+
+:root {
+  --background: #e8f1fb;
+  --ink: #0d1728;
+  --muted: #4c5a6d;
+  --panel: rgba(255, 255, 255, 0.94);
+  --panel-strong: rgba(255, 255, 255, 0.98);
+  --line: rgba(80, 98, 124, 0.24);
+  --olive: #22a06b;
+  --clay: #e05d5d;
+  --blue: #3278ff;
+  --violet: #7657ff;
+  --shadow: 0 24px 80px rgba(39, 62, 92, 0.14);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+* {
+  scrollbar-color: rgba(50, 120, 255, 0.32) transparent;
+  scrollbar-width: thin;
+}
+
+*::-webkit-scrollbar {
+  width: 0.55rem;
+  height: 0.55rem;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 0.18rem solid transparent;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(50, 120, 255, 0.42), rgba(34, 160, 107, 0.36)) border-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(50, 120, 255, 0.58), rgba(34, 160, 107, 0.52)) border-box;
+}
+
+html {
+  overflow-x: hidden;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(50, 120, 255, 0.24), transparent 28%),
+    radial-gradient(circle at 85% 0%, rgba(34, 160, 107, 0.2), transparent 24%),
+    linear-gradient(180deg, #f4f9ff 0%, #e9f2fb 42%, #dde9f5 100%),
+    var(--background);
+  background-attachment: fixed;
+  color: var(--ink);
+  font-family: var(--font-body), Georgia, serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+label {
+  touch-action: manipulation;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+.pretty-heading {
+  text-wrap: balance;
+}
+
+.mac-panel {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+}
+
+.mac-panel-strong {
+  border: 1px solid var(--line);
+  background: var(--panel-strong);
+  box-shadow: 0 16px 48px rgba(39, 62, 92, 0.1);
+  backdrop-filter: blur(18px);
+}
+
+.smooth-layout {
+  transition:
+    grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    height 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    padding 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    gap 220ms ease,
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+
+@media (max-width: 639px) {
+  body {
+    background:
+      radial-gradient(circle at 18% 4%, rgba(50, 120, 255, 0.22), transparent 30%),
+      radial-gradient(circle at 92% 0%, rgba(34, 160, 107, 0.18), transparent 28%),
+      linear-gradient(180deg, #f7fbff 0%, #edf5ff 45%, #dfeaf7 100%),
+      var(--background);
+  }
+
+  .mac-panel {
+    box-shadow: 0 18px 54px rgba(39, 62, 92, 0.13);
+    backdrop-filter: blur(22px);
+  }
+
+  .mac-panel-strong {
+    box-shadow: 0 10px 28px rgba(39, 62, 92, 0.09);
+    backdrop-filter: blur(22px);
+  }
+
+  .brand-mark {
+    width: 3rem;
+    height: 3rem;
+    border-radius: 1.1rem;
+  }
+
+  table {
+    font-size: 0.82rem;
+  }
+  *::-webkit-scrollbar {
+    width: 0.35rem;
+    height: 0.35rem;
+  }
+}
+
+.mobile-contained {
+  max-width: 100vw;
+  overflow-x: clip;
+}
+
+.mobile-scroll-row {
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: visible;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 3rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mobile-scroll-item {
+  scroll-snap-align: start;
+}
+
+.header-graph-fade {
+  mask-image: linear-gradient(90deg, transparent 0%, #000 12%, #000 88%, transparent 100%);
+}
+
+.timeline-point-hit {
+  z-index: 2;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+
+.timeline-point-hit--draggable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.timeline-point-hit--draggable:active {
+  cursor: grabbing;
+}
+
+.timeline-point-hit::after {
+  position: absolute;
+  inset: 0.55rem;
+  border-radius: 999px;
+  content: "";
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    background-color 160ms ease;
+}
+
+.timeline-point-hit:hover::after {
+  background: rgba(50, 120, 255, 0.08);
+  box-shadow: 0 0 0 1px rgba(50, 120, 255, 0.22);
+}
+
+.timeline-point-hit:focus-visible::after {
+  background: rgba(50, 120, 255, 0.1);
+  box-shadow:
+    0 0 0 2px white,
+    0 0 0 5px rgba(50, 120, 255, 0.82);
+  transform: scale(1.03);
+}
+
+.timeline-score-line,
+.timeline-range-line,
+.timeline-range-group,
+.timeline-node,
+.timeline-node-ring,
+.timeline-drag-preview,
+.timeline-endpoint-label {
+  transition:
+    d 260ms ease,
+    cx 260ms ease,
+    cy 260ms ease,
+    r 180ms ease,
+    opacity 180ms ease,
+    fill 180ms ease,
+    stroke 180ms ease,
+    transform 220ms ease;
+}
+
+.timeline-range-group,
+.timeline-endpoint-label {
+  opacity: 1;
+}
+
+.timeline-range-group--hidden,
+.timeline-endpoint-label--hidden {
+  opacity: 0;
+}
+
+.timeline-endpoint-label {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.timeline-endpoint-label--hidden {
+  transform: translateY(0.25rem) scale(0.96);
+}
+
+.timeline-node-ring {
+  animation: timeline-ring-in 220ms ease both;
+}
+
+.timeline-graph--dragging .timeline-score-line,
+.timeline-graph--dragging .timeline-range-line,
+.timeline-graph--dragging .timeline-range-group,
+.timeline-graph--dragging .timeline-node,
+.timeline-graph--dragging .timeline-node-ring,
+.timeline-graph--dragging .timeline-drag-preview,
+.timeline-graph--dragging .timeline-endpoint-label {
+  animation: none;
+  transition: none;
+}
+
+@keyframes timeline-ring-in {
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+    transform-origin: center;
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: center;
+  }
+}
+
+.report-transition {
+  opacity: 1;
+  filter: blur(0);
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 180ms ease,
+    filter 180ms ease,
+    transform 180ms ease;
+  will-change: opacity, filter, transform;
+}
+
+.report-transition--leaving {
+  opacity: 0.38;
+  filter: blur(3px);
+  transform: translateY(4px) scale(0.996);
+}
+
+.brand-mark {
+  display: grid;
+  width: 3.25rem;
+  height: 3.25rem;
+  place-items: center;
+  border-radius: 1.25rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(220, 236, 255, 0.58));
+  box-shadow:
+    0 16px 36px rgba(50, 120, 255, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.95);
+}
+
+.brand-mark svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-mark__soft-line,
+.brand-mark__score-line {
+  fill: none;
+  stroke: #3278ff;
+  stroke-width: 3.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.brand-mark__soft-line {
+  stroke: rgba(50, 120, 255, 0.18);
+  stroke-width: 3.2;
+}
+
+.brand-mark__score-line {
+  stroke: url("#feecoTrendGradient");
+  stroke-width: 4.4;
+}
+
+.brand-mark__dot {
+  fill: #3278ff;
+}
+
+.intro-shell {
+  position: fixed;
+  z-index: 50;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 24%, rgba(50, 120, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 70% 18%, rgba(34, 160, 107, 0.2), transparent 24%),
+    rgba(244, 249, 255, 0.88);
+  backdrop-filter: blur(18px);
+  pointer-events: none;
+}
+
+.intro-card {
+  width: min(22rem, calc(100vw - 3rem));
+  border: 1px solid var(--line);
+  border-radius: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+  padding: 1.5rem;
+}
+
+.intro-score {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.intro-score > span {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 4rem;
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+}
+
+.intro-trend {
+  display: flex;
+  align-items: end;
+  gap: 0.35rem;
+  height: 3rem;
+}
+
+.intro-trend span {
+  display: block;
+  width: 0.65rem;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--blue), var(--olive));
+}
+
+.intro-trend span:nth-child(1) {
+  height: 1.15rem;
+}
+
+.intro-trend span:nth-child(2) {
+  height: 2rem;
+}
+
+.intro-trend span:nth-child(3) {
+  height: 2.8rem;
+}
+
+.intro-bar {
+  height: 0.55rem;
+  margin-top: 1.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e5edf8;
+}
+
+.intro-bar span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--olive), var(--blue));
+  transform-origin: left;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .rise-in {
+    animation: rise-in 260ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .score-pop {
+    animation: score-pop 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .stagger-1 {
+    animation: rise-in 300ms cubic-bezier(0.2, 0.8, 0.2, 1) 80ms both;
+  }
+
+  .stagger-2 {
+    animation: rise-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1) 150ms both;
+  }
+
+  .stagger-3 {
+    animation: rise-in 340ms cubic-bezier(0.2, 0.8, 0.2, 1) 220ms both;
+  }
+
+  .intro-shell {
+    animation: intro-shell 1450ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .intro-card {
+    animation: intro-card 1100ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .intro-score > span {
+    animation: score-pop 560ms cubic-bezier(0.2, 0.8, 0.2, 1) 220ms both;
+  }
+
+  .intro-trend span {
+    animation: intro-bars 620ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    transform-origin: bottom;
+  }
+
+  .intro-trend span:nth-child(1) {
+    animation-delay: 280ms;
+  }
+
+  .intro-trend span:nth-child(2) {
+    animation-delay: 360ms;
+  }
+
+  .intro-trend span:nth-child(3) {
+    animation-delay: 440ms;
+  }
+
+  .intro-bar span {
+    animation: intro-progress 820ms cubic-bezier(0.2, 0.8, 0.2, 1) 360ms both;
+  }
+
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes score-pop {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.98);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @keyframes intro-shell {
+    0%,
+    78% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
+  }
+
+  @keyframes intro-card {
+    from {
+      opacity: 0;
+      transform: translateY(14px) scale(0.97);
+    }
+    48%,
+    78% {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.99);
+    }
+  }
+
+  @keyframes intro-bars {
+    from {
+      opacity: 0;
+      transform: scaleY(0.25);
+    }
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+
+  @keyframes intro-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+}
