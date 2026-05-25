@@ -90,7 +90,7 @@ function Header({ language, onLanguageChange }: Pick<UploadPanelProps, "language
 }
 
 function CoffeeLink() {
-  const paypalURL = process.env.NEXT_PUBLIC_PAYPAL_COFFEE_URL;
+  const paypalURL = validExternalURL(process.env.NEXT_PUBLIC_PAYPAL_COFFEE_URL);
 
   if (!paypalURL) {
     return null;
@@ -108,6 +108,18 @@ function CoffeeLink() {
       <ExternalLink className="h-3.5 w-3.5 text-[var(--muted)]" aria-hidden="true" />
     </a>
   );
+}
+
+function validExternalURL(value: string | undefined): string {
+  if (!value) {
+    return "";
+  }
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:" ? url.toString() : "";
+  } catch {
+    return "";
+  }
 }
 
 function UploadDropzone({ isLoading, language, onAnalyze }: Pick<UploadPanelProps, "isLoading" | "language" | "onAnalyze">) {

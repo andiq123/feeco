@@ -11,7 +11,10 @@ export async function proxyMultipartRequest(request: NextRequest, backendPath: s
 
   const backendURL = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL;
   const apiKey = process.env.BACKEND_API_KEY;
-  const formData = await request.formData();
+  const formData = await readMultipartFormData(request);
+  if (formData instanceof NextResponse) {
+    return formData;
+  }
   const headers = new Headers();
 
   if (apiKey) {
@@ -31,4 +34,12 @@ export async function proxyMultipartRequest(request: NextRequest, backendPath: s
       "content-type": response.headers.get("content-type") ?? "application/json",
     },
   });
+}
+
+async function readMultipartFormData(request: NextRequest): Promise<FormData | NextResponse> {
+  try {
+    return await request.formData();
+  } catch {
+    return new NextResponse("upload a valid multipart PDF request", { status: 400 });
+  }
 }
