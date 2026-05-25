@@ -1,18 +1,27 @@
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 
 const DEFAULT_BACKEND_URL = "http://localhost:8080";
+const VISITOR_COOKIE = "feeco_visitor_id";
+const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
 export const runtime = "nodejs";
 
-export async function GET(): Promise<NextResponse> {
-  return proxyStatisticsRequest("/api/statistics", "GET");
+export async function GET(request: Request): Promise<NextResponse> {
+  if (!isAppFetch(request)) {
+    return new NextResponse("not found", { status: 404 });
+  }
+  return proxyStatisticsRequest("/api/statistics", "GET", undefined, fallbackStatistics());
 }
 
 export async function POST(request: Request): Promise<NextResponse> {
-  return proxyStatisticsRequest("/api/statistics/visit", "POST", await request.text());
+  if (!isAppFetch(request)) {
+    return new NextResponse("not found", { status: 404 });
+  }
+  return proxyStatisticsRequest("/api/statistics/visit", "POST", JSON.stringify({ visitorId: await visitorId() }), new NextResponse(null, { status: 204 }));
 }
 
-async function proxyStatisticsRequest(path: string, method: "GET" | "POST", requestBody?: string): Promise<NextResponse> {
+async function proxyStatisticsRequest(path: string, method: "GET" | "POST", requestBody: string | undefined, fallback: NextResponse): Promise<NextResponse> {
   const backendURL = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL;
   const apiKey = process.env.BACKEND_API_KEY;
   const headers = new Headers();
@@ -34,6 +43,10 @@ async function proxyStatisticsRequest(path: string, method: "GET" | "POST", requ
     });
     const responseBody = await response.text();
 
+    if (!response.ok) {
+      return fallback;
+    }
+
     return new NextResponse(responseBody, {
       status: response.status,
       headers: {
@@ -41,6 +54,43 @@ async function proxyStatisticsRequest(path: string, method: "GET" | "POST", requ
       },
     });
   } catch {
-    return NextResponse.json({ error: "statistics unavailable" }, { status: 503 });
+    return fallback;
   }
+}
+
+function fallbackStatistics(): NextResponse {
+  return NextResponse.json({
+    available: false,
+    distinctGuests: 0,
+    parserUses: 0,
+    updatedAt: "",
+  });
+}
+
+function isAppFetch(request: Request): boolean {
+  const mode = request.headers.get("sec-fetch-mode");
+  const site = request.headers.get("sec-fetch-site");
+
+  if (mode === "navigate") {
+    return false;
+  }
+  return site === "same-origin" || site === "same-site";
+}
+
+async function visitorId(): Promise<string> {
+  const cookieStore = await cookies();
+  const existing = cookieStore.get(VISITOR_COOKIE)?.value;
+  if (existing && existing.length >= 16 && existing.length <= 128) {
+    return existing;
+  }
+
+  const next = crypto.randomUUID();
+  cookieStore.set(VISITOR_COOKIE, next, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    maxAge: VISITOR_COOKIE_MAX_AGE,
+    path: "/",
+  });
+  return next;
 }
