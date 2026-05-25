@@ -87,6 +87,7 @@ Frontend, `frontend/.env.local`:
 | `RATE_LIMIT_REQUESTS` | `60` | Requests allowed per client window |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate-limit window size |
 | `NEXT_PUBLIC_PAYPAL_COFFEE_URL` | empty | Optional public PayPal coffee link |
+| `NEXT_PUBLIC_BACKEND_WS_URL` | empty | Optional public Go API WebSocket origin for realtime aggregate statistics, for example `wss://api.example.com` |
 
 ## Development
 

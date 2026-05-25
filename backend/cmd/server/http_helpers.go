@@ -37,7 +37,7 @@ func withCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Handle
 
 func withAPIKey(next http.Handler, apiKey string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/healthz" || r.Method == http.MethodOptions || apiKey == "" {
+		if r.URL.Path == "/healthz" || r.URL.Path == "/api/statistics/stream" || r.Method == http.MethodOptions || apiKey == "" {
 			next.ServeHTTP(w, r)
 			return
 		}

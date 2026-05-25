@@ -11,12 +11,20 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"sync"
 	"time"
 
+	"github.com/gorilla/websocket"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-const statsTimeout = 3 * time.Second
+const (
+	statsTimeout       = 3 * time.Second
+	statsWriteTimeout  = 5 * time.Second
+	statsPongWait      = 35 * time.Second
+	statsPingInterval  = 25 * time.Second
+	statsBroadcastSize = 1
+)
 
 type statisticsSnapshot struct {
 	DistinctGuests int    `json:"distinctGuests"`
@@ -25,13 +33,21 @@ type statisticsSnapshot struct {
 }
 
 type statsStore struct {
-	db     *sql.DB
-	secret []byte
+	db             *sql.DB
+	secret         []byte
+	allowedOrigins map[string]struct{}
+	mu             sync.Mutex
+	clients        map[*statsClient]struct{}
+}
+
+type statsClient struct {
+	conn *websocket.Conn
+	send chan statisticsSnapshot
 }
 
 var activeStats *statsStore
 
-func newStatsStore(databaseURL string, secret string) (*statsStore, error) {
+func newStatsStore(databaseURL string, secret string, allowedOrigins map[string]struct{}) (*statsStore, error) {
 	if databaseURL == "" {
 		return nil, errors.New("POSTGRES_URL is required")
 	}
@@ -49,7 +65,12 @@ func newStatsStore(databaseURL string, secret string) (*statsStore, error) {
 	db.SetMaxIdleConns(4)
 	db.SetConnMaxLifetime(30 * time.Minute)
 
-	store := &statsStore{db: db, secret: []byte(secret)}
+	store := &statsStore{
+		db:             db,
+		secret:         []byte(secret),
+		allowedOrigins: allowedOrigins,
+		clients:        map[*statsClient]struct{}{},
+	}
 	if err := store.migrate(context.Background()); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -76,6 +97,38 @@ func (s *statsStore) handleStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, snapshot)
+}
+
+func (s *statsStore) handleStatisticsStream(w http.ResponseWriter, r *http.Request) {
+	upgrader := websocket.Upgrader{
+		CheckOrigin: func(request *http.Request) bool {
+			origin := request.Header.Get("Origin")
+			if origin == "" {
+				return true
+			}
+			_, ok := s.allowedOrigins[origin]
+			return ok
+		},
+	}
+
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		slog.Warn("upgrade statistics websocket", "error", err)
+		return
+	}
+
+	client := &statsClient{
+		conn: conn,
+		send: make(chan statisticsSnapshot, statsBroadcastSize),
+	}
+	s.addClient(client)
+
+	if snapshot, err := s.snapshot(r.Context()); err == nil {
+		client.sendLatest(snapshot)
+	}
+
+	go s.writeClient(client)
+	s.readClient(client)
 }
 
 func (s *statsStore) migrate(ctx context.Context) error {
@@ -135,7 +188,12 @@ func (s *statsStore) record(ctx context.Context, client string, parserUses int) 
 		return err
 	}
 
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	s.broadcastLatest()
+	return nil
 }
 
 func (s *statsStore) snapshot(ctx context.Context) (statisticsSnapshot, error) {
@@ -168,6 +226,97 @@ func (s *statsStore) guestHash(client string) string {
 	mac := hmac.New(sha256.New, s.secret)
 	_, _ = mac.Write([]byte(client))
 	return hex.EncodeToString(mac.Sum(nil))
+}
+
+func (s *statsStore) addClient(client *statsClient) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	s.clients[client] = struct{}{}
+}
+
+func (s *statsStore) removeClient(client *statsClient) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, ok := s.clients[client]; ok {
+		delete(s.clients, client)
+		close(client.send)
+	}
+}
+
+func (s *statsStore) broadcastLatest() {
+	snapshot, err := s.snapshot(context.Background())
+	if err != nil {
+		slog.Warn("broadcast statistics", "error", err)
+		return
+	}
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for client := range s.clients {
+		client.sendLatest(snapshot)
+	}
+}
+
+func (s *statsStore) readClient(client *statsClient) {
+	defer func() {
+		s.removeClient(client)
+		_ = client.conn.Close()
+	}()
+
+	client.conn.SetReadLimit(256)
+	_ = client.conn.SetReadDeadline(time.Now().Add(statsPongWait))
+	client.conn.SetPongHandler(func(string) error {
+		return client.conn.SetReadDeadline(time.Now().Add(statsPongWait))
+	})
+
+	for {
+		if _, _, err := client.conn.NextReader(); err != nil {
+			return
+		}
+	}
+}
+
+func (s *statsStore) writeClient(client *statsClient) {
+	ticker := time.NewTicker(statsPingInterval)
+	defer func() {
+		ticker.Stop()
+		s.removeClient(client)
+		_ = client.conn.Close()
+	}()
+
+	for {
+		select {
+		case snapshot, ok := <-client.send:
+			_ = client.conn.SetWriteDeadline(time.Now().Add(statsWriteTimeout))
+			if !ok {
+				_ = client.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+			if err := client.conn.WriteJSON(snapshot); err != nil {
+				return
+			}
+		case <-ticker.C:
+			_ = client.conn.SetWriteDeadline(time.Now().Add(statsWriteTimeout))
+			if err := client.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
+		}
+	}
+}
+
+func (c *statsClient) sendLatest(snapshot statisticsSnapshot) {
+	select {
+	case c.send <- snapshot:
+	default:
+		select {
+		case <-c.send:
+		default:
+		}
+		c.send <- snapshot
+	}
 }
 
 func secureDatabaseURL(rawURL string) (string, error) {

@@ -15,7 +15,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	statsStore, err := newStatsStore(config.PostgresURL, config.APIKey)
+	statsStore, err := newStatsStore(config.PostgresURL, config.APIKey, config.AllowedOrigins)
 	if err != nil {
 		slog.Warn("statistics disabled", "error", err)
 	}

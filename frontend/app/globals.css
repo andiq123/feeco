@@ -92,6 +92,45 @@ label {
   backdrop-filter: blur(18px);
 }
 
+.stats-orbit {
+  position: relative;
+}
+
+.stats-orbit__shine {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 0%, transparent 36%, rgba(255, 255, 255, 0.78) 50%, transparent 64%, transparent 100%);
+  opacity: 0.55;
+  transform: translateX(-85%);
+  animation: stats-shine 4.8s ease-in-out infinite;
+}
+
+.stats-live-glow {
+  animation: stats-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes stats-shine {
+  0%,
+  42% {
+    transform: translateX(-85%);
+  }
+  72%,
+  100% {
+    transform: translateX(85%);
+  }
+}
+
+@keyframes stats-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 160, 107, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 7px rgba(34, 160, 107, 0.08);
+  }
+}
+
 .smooth-layout {
   transition:
     grid-template-columns 280ms cubic-bezier(0.22, 1, 0.36, 1),

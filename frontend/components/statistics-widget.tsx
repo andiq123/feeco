@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Users, WandSparkles } from "lucide-react";
+import { Sparkles, Users, WandSparkles } from "lucide-react";
 import { copy, type Language } from "@/lib/i18n";
 import type { AppStatistics } from "@/lib/statistics";
 import type { ReactNode } from "react";
@@ -16,34 +16,35 @@ export function StatisticsWidget({ language, statistics }: StatisticsWidgetProps
   const distinctGuests = statistics?.distinctGuests ?? 0;
 
   return (
-    <aside className="mac-panel h-fit overflow-hidden rounded-[1.5rem] p-4 sm:rounded-[1.75rem] lg:sticky lg:top-8">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-[0.62rem] font-black uppercase tracking-[0.18em] text-[var(--blue)]">{labels.statisticsTitle}</p>
-          <h2 className="mt-2 font-[var(--font-display)] text-2xl font-semibold leading-none">Feeco pulse</h2>
+    <aside className="stats-orbit h-fit overflow-hidden rounded-[1.25rem] border border-white/70 bg-white/82 p-2.5 shadow-[0_18px_56px_rgba(39,62,92,0.13)] backdrop-blur-xl lg:sticky lg:top-8">
+      <div className="stats-orbit__shine" aria-hidden="true" />
+      <div className="flex items-center gap-2">
+        <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-2xl ${statistics ? "stats-live-glow bg-emerald-50 text-[var(--olive)]" : "bg-slate-100 text-[var(--muted)]"}`}>
+          <Sparkles className="h-4.5 w-4.5" aria-hidden="true" />
         </div>
-        <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${statistics ? "bg-emerald-50 text-[var(--olive)]" : "bg-slate-100 text-[var(--muted)]"}`}>
-          <Activity className="h-5 w-5" aria-hidden="true" />
+        <div className="min-w-0 flex-1">
+          <p className="text-[0.58rem] font-black uppercase leading-3 tracking-[0.16em] text-[var(--blue)]">{labels.statisticsTitle}</p>
+          <p className="mt-0.5 truncate font-[var(--font-display)] text-lg font-semibold leading-none">Feeco pulse</p>
         </div>
       </div>
 
-      <div className="mt-5 grid gap-3">
+      <div className="mt-2 grid grid-cols-2 gap-2">
         <MetricTile icon={<Users />} label={labels.distinctGuests} value={statistics ? compactNumber(distinctGuests) : "--"} tone="green" />
-        <MetricTile icon={<WandSparkles />} label={labels.parserUses} value={statistics ? compactNumber(parserUses) : "--"} tone="blue" />
+        <MetricTile icon={<WandSparkles />} label={labels.parserUses(parserUses)} value={statistics ? compactNumber(parserUses) : "--"} tone="blue" />
       </div>
     </aside>
   );
 }
 
 function MetricTile({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone: "blue" | "green" }) {
-  const toneClass = tone === "green" ? "bg-emerald-50 text-[var(--olive)]" : "bg-[#edf4ff] text-[var(--blue)]";
+  const toneClass = tone === "green" ? "text-[var(--olive)]" : "text-[var(--blue)]";
 
   return (
-    <div className="flex items-center gap-3 rounded-[1.25rem] border border-[var(--line)] bg-white/75 p-3 shadow-sm shadow-slate-900/5">
-      <div className={`grid h-10 w-10 shrink-0 place-items-center rounded-2xl ${toneClass} [&_svg]:h-5 [&_svg]:w-5`}>{icon}</div>
+    <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--line)] bg-white/74 px-2.5 py-2 shadow-sm shadow-slate-900/5">
+      <div className={`shrink-0 ${toneClass} [&_svg]:h-4.5 [&_svg]:w-4.5`}>{icon}</div>
       <div className="min-w-0">
-        <p className="numeric text-2xl font-black leading-none text-[var(--ink)]">{value}</p>
-        <p className="mt-1 text-[0.72rem] font-bold leading-4 text-[var(--muted)]">{label}</p>
+        <p className="numeric text-base font-black leading-none text-[var(--ink)]">{value}</p>
+        <p className="mt-0.5 truncate text-[0.62rem] font-bold leading-3 text-[var(--muted)]">{label}</p>
       </div>
     </div>
   );

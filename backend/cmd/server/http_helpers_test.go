@@ -53,6 +53,21 @@ func TestWithAPIKeySkipsHealth(t *testing.T) {
 	}
 }
 
+func TestWithAPIKeySkipsStatisticsStream(t *testing.T) {
+	handler := withAPIKey(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}), "secret")
+
+	request := httptest.NewRequest(http.MethodGet, "/api/statistics/stream", nil)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if response.Code != http.StatusOK {
+		t.Fatalf("response code = %d, want %d", response.Code, http.StatusOK)
+	}
+}
+
 func TestWithCORSAllowsConfiguredOrigin(t *testing.T) {
 	handler := withCORS(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
