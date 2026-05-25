@@ -26,8 +26,7 @@ export default function Home() {
   return (
     <main className="min-h-screen px-3 py-3 text-[var(--ink)] sm:px-6 sm:py-5 lg:px-8">
       <IntroAnimation />
-      <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[280px_minmax(0,1fr)] lg:items-start">
-        <StatisticsWidget language={language} statistics={statistics} />
+      <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
         <div className="min-w-0">
           <UploadPanel
             fileName={analysis.fileName}
@@ -40,6 +39,7 @@ export default function Home() {
             onAnalyze={analysis.analyzeBatch}
           />
         </div>
+        <StatisticsWidget language={language} statistics={statistics} />
       </div>
     </main>
   );
