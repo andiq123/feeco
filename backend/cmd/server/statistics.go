@@ -6,11 +6,13 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"log/slog"
 	"net"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -30,6 +32,10 @@ type statisticsSnapshot struct {
 	DistinctGuests int    `json:"distinctGuests"`
 	ParserUses     int    `json:"parserUses"`
 	UpdatedAt      string `json:"updatedAt"`
+}
+
+type statisticsVisitRequest struct {
+	VisitorID string `json:"visitorId"`
 }
 
 type statsStore struct {
@@ -84,7 +90,7 @@ func recordParserUse(r *http.Request, parserUses int) {
 	if activeStats == nil || parserUses <= 0 {
 		return
 	}
-	if err := activeStats.record(r.Context(), clientKey(r), parserUses); err != nil {
+	if err := activeStats.recordParserUse(r.Context(), parserUses); err != nil {
 		slog.Warn("record statistics", "error", err)
 	}
 }
@@ -97,6 +103,28 @@ func (s *statsStore) handleStatistics(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, snapshot)
+}
+
+func (s *statsStore) handleStatisticsVisit(w http.ResponseWriter, r *http.Request) {
+	var request statisticsVisitRequest
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 512)).Decode(&request); err != nil {
+		http.Error(w, "invalid visit payload", http.StatusBadRequest)
+		return
+	}
+
+	visitorID := strings.TrimSpace(request.VisitorID)
+	if len(visitorID) < 16 || len(visitorID) > 128 {
+		http.Error(w, "invalid visitor id", http.StatusBadRequest)
+		return
+	}
+
+	if err := s.recordVisit(r.Context(), visitorID); err != nil {
+		slog.Warn("record visit", "error", err)
+		http.Error(w, "statistics unavailable", http.StatusServiceUnavailable)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (s *statsStore) handleStatisticsStream(w http.ResponseWriter, r *http.Request) {
@@ -157,28 +185,34 @@ func (s *statsStore) migrate(ctx context.Context) error {
 	return err
 }
 
-func (s *statsStore) record(ctx context.Context, client string, parserUses int) error {
+func (s *statsStore) recordVisit(ctx context.Context, visitorID string) error {
 	ctx, cancel := context.WithTimeout(ctx, statsTimeout)
 	defer cancel()
 
-	tx, err := s.db.BeginTx(ctx, nil)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = tx.Rollback()
-	}()
-
-	_, err = tx.ExecContext(ctx, `
+	result, err := s.db.ExecContext(ctx, `
 		insert into app_statistic_guests (guest_hash)
 		values ($1)
-		on conflict (guest_hash) do update set last_seen_at = now()
-	`, s.guestHash(client))
+		on conflict (guest_hash) do nothing
+	`, s.guestHash(visitorID))
 	if err != nil {
 		return err
 	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected > 0 {
+		s.touchUpdatedAt(ctx)
+		s.broadcastLatest()
+	}
+	return nil
+}
 
-	_, err = tx.ExecContext(ctx, `
+func (s *statsStore) recordParserUse(ctx context.Context, parserUses int) error {
+	ctx, cancel := context.WithTimeout(ctx, statsTimeout)
+	defer cancel()
+
+	_, err := s.db.ExecContext(ctx, `
 		update app_statistics
 		set parser_uses = parser_uses + $1,
 			updated_at = now()
@@ -188,12 +222,19 @@ func (s *statsStore) record(ctx context.Context, client string, parserUses int) 
 		return err
 	}
 
-	if err := tx.Commit(); err != nil {
-		return err
-	}
-
 	s.broadcastLatest()
 	return nil
+}
+
+func (s *statsStore) touchUpdatedAt(ctx context.Context) {
+	_, err := s.db.ExecContext(ctx, `
+		update app_statistics
+		set updated_at = now()
+		where id = true
+	`)
+	if err != nil {
+		slog.Warn("touch statistics updated_at", "error", err)
+	}
 }
 
 func (s *statsStore) snapshot(ctx context.Context) (statisticsSnapshot, error) {

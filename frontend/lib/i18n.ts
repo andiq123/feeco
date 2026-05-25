@@ -98,7 +98,7 @@ export const copy = {
     },
     upload: {
       analyzing: "Se analizează...",
-      brand: "Analizor Biroul de Credit",
+      brand: "Analizor de rapoarte Biroul de Credit",
       choose: "Trage sau alege rapoarte PDF",
       drop: "Lasă rapoartele aici",
       secureTitle: "Privat",

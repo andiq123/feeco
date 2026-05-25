@@ -18,6 +18,20 @@ export async function fetchStatistics(): Promise<AppStatistics | null> {
   }
 }
 
+export async function recordVisit(visitorId: string): Promise<void> {
+  try {
+    await fetch("/api/statistics", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ visitorId }),
+    });
+  } catch {
+    // Statistics are non-critical; the app should continue if unavailable.
+  }
+}
+
 export function subscribeStatistics(onMessage: (statistics: AppStatistics) => void): () => void {
   const streamURL = statisticsStreamURL();
   if (!streamURL) {
