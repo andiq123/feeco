@@ -11,6 +11,7 @@ type config struct {
 	Port                   string
 	RateLimitRequests      int
 	RateLimitWindowSeconds int
+	PostgresURL            string
 }
 
 func loadConfig() config {
@@ -20,6 +21,7 @@ func loadConfig() config {
 		Port:                   env("PORT", "8080"),
 		RateLimitRequests:      envInt("RATE_LIMIT_REQUESTS", 60),
 		RateLimitWindowSeconds: envInt("RATE_LIMIT_WINDOW_SECONDS", 60),
+		PostgresURL:            env("POSTGRES_URL", ""),
 	}
 }
 

@@ -74,6 +74,9 @@ Backend, `backend/.env`:
 | `BACKEND_API_KEY` | required | Shared secret required by backend routes |
 | `RATE_LIMIT_REQUESTS` | `60` | Requests allowed per client window |
 | `RATE_LIMIT_WINDOW_SECONDS` | `60` | Rate-limit window size |
+| `POSTGRES_URL` | required | Supabase Postgres connection string for aggregate statistics |
+
+Database access is intentionally backend-only. The browser and Next.js routes never connect to Supabase directly; Next.js only proxies aggregate statistics through the Go API using `BACKEND_API_KEY`. Remote Postgres connections require SSL, and `sslmode=disable` is only allowed for local development hosts.
 
 Frontend, `frontend/.env.local`:
 

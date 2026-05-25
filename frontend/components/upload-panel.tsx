@@ -26,6 +26,7 @@ export function UploadPanel({ fileName, fileCount, error, isBackendAvailable, is
       <Header language={language} onLanguageChange={onLanguageChange} />
       <div className="mt-5 grid gap-4 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-stretch">
         <div>
+          <BackendInlineWarning isBackendAvailable={isBackendAvailable} language={language} />
           <UploadDropzone isLoading={isLoading} language={language} onAnalyze={onAnalyze} />
           <SelectedFile fileName={fileName} fileCount={fileCount} isLoading={isLoading} language={language} />
           <UploadError error={error} />
@@ -33,6 +34,24 @@ export function UploadPanel({ fileName, fileCount, error, isBackendAvailable, is
         <UploadInfoWidgets language={language} />
       </div>
     </aside>
+  );
+}
+
+function BackendInlineWarning({ isBackendAvailable, language }: Pick<UploadPanelProps, "isBackendAvailable" | "language">) {
+  if (isBackendAvailable) {
+    return null;
+  }
+
+  const labels = copy[language].upload;
+
+  return (
+    <div className="mb-3 flex items-start gap-3 rounded-2xl border border-[rgba(224,93,93,0.28)] bg-[#fff7f7] p-3 text-sm text-[var(--ink)]">
+      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--clay)]" aria-hidden="true" />
+      <div className="min-w-0">
+        <p className="font-black leading-5">{labels.backendOfflineTitle}</p>
+        <p className="mt-0.5 text-xs leading-5 text-[var(--muted)]">{labels.backendOfflineBody}</p>
+      </div>
+    </div>
   );
 }
 

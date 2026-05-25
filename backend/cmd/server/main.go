@@ -15,7 +15,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	handler := withAPIKey(routes(), config.APIKey)
+	statsStore, err := newStatsStore(config.PostgresURL, config.APIKey)
+	if err != nil {
+		slog.Warn("statistics disabled", "error", err)
+	}
+
+	handler := withAPIKey(routes(statsStore), config.APIKey)
 	handler = withRateLimit(handler, config.RateLimitRequests, time.Duration(config.RateLimitWindowSeconds)*time.Second)
 	handler = withCORS(handler, config.AllowedOrigins)
 
