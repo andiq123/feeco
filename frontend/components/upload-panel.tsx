@@ -1,10 +1,10 @@
 "use client";
 
-import { BarChart3, Coffee, ExternalLink, FileStack, FileText, Loader2, LockKeyhole, ScanSearch, Upload } from "lucide-react";
+import { AlertTriangle, BarChart3, Coffee, ExternalLink, FileStack, FileText, Loader2, LockKeyhole, ScanSearch, Upload, X } from "lucide-react";
 import { BrandLogo } from "@/components/brand-logo";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { copy, type Language } from "@/lib/i18n";
-import { DragEvent, useState } from "react";
+import { DragEvent, useEffect, useState } from "react";
 
 const maxPDFCount = 50;
 
@@ -12,15 +12,17 @@ type UploadPanelProps = {
   fileName: string;
   fileCount: number;
   error: string;
+  isBackendAvailable: boolean;
   isLoading: boolean;
   language: Language;
   onLanguageChange: (language: Language) => void;
   onAnalyze: (files: File[]) => Promise<void>;
 };
 
-export function UploadPanel({ fileName, fileCount, error, isLoading, language, onLanguageChange, onAnalyze }: UploadPanelProps) {
+export function UploadPanel({ fileName, fileCount, error, isBackendAvailable, isLoading, language, onLanguageChange, onAnalyze }: UploadPanelProps) {
   return (
     <aside className="rise-in mac-panel rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-7">
+      <BackendToast isBackendAvailable={isBackendAvailable} language={language} />
       <Header language={language} onLanguageChange={onLanguageChange} />
       <div className="mt-5 grid gap-4 sm:mt-7 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-stretch">
         <div>
@@ -31,6 +33,41 @@ export function UploadPanel({ fileName, fileCount, error, isLoading, language, o
         <UploadInfoWidgets language={language} />
       </div>
     </aside>
+  );
+}
+
+function BackendToast({ isBackendAvailable, language }: Pick<UploadPanelProps, "isBackendAvailable" | "language">) {
+  const [dismissed, setDismissed] = useState(false);
+  const labels = copy[language].upload;
+
+  useEffect(() => {
+    if (isBackendAvailable) {
+      setDismissed(false);
+    }
+  }, [isBackendAvailable]);
+
+  if (isBackendAvailable || dismissed) {
+    return null;
+  }
+
+  return (
+    <div className="fixed inset-x-3 top-3 z-50 mx-auto flex max-w-md items-start gap-3 rounded-2xl border border-[rgba(224,93,93,0.28)] bg-white/95 p-3 text-sm text-[var(--ink)] shadow-[0_18px_48px_rgba(39,62,92,0.18)] backdrop-blur-xl sm:right-5 sm:left-auto sm:top-5">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1f1] text-[var(--clay)]">
+        <AlertTriangle className="h-5 w-5" aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="font-black leading-5">{labels.backendOfflineTitle}</p>
+        <p className="mt-0.5 text-xs leading-5 text-[var(--muted)]">{labels.backendOfflineBody}</p>
+      </div>
+      <button
+        className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--muted)] transition hover:bg-slate-100 hover:text-[var(--ink)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue)]"
+        type="button"
+        aria-label={labels.dismiss}
+        onClick={() => setDismissed(true)}
+      >
+        <X className="h-4 w-4" aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 

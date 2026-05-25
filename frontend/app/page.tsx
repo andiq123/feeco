@@ -28,6 +28,7 @@ export default function Home() {
           fileName={analysis.fileName}
           fileCount={analysis.fileCount}
           error={analysis.error}
+          isBackendAvailable={analysis.isBackendAvailable}
           isLoading={analysis.isLoading}
           language={language}
           onLanguageChange={setLanguage}

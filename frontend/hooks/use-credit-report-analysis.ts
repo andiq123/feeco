@@ -2,9 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { analyzeCreditReport, analyzeCreditReportBatch } from "@/lib/analyze-report";
+import { checkBackendHealth } from "@/lib/backend-health";
 import type { BatchCreditReport, CreditReport } from "@/lib/types";
 
 const ANALYSIS_STORAGE_KEY = "feeco.analysis.result";
+const HEALTH_CHECK_INTERVAL_MS = 30_000;
 
 type StoredAnalysis = {
   report: CreditReport | null;
@@ -19,6 +21,7 @@ export type AnalysisState = {
   fileName: string;
   fileCount: number;
   error: string;
+  isBackendAvailable: boolean;
   isLoading: boolean;
   analyzeBatch: (files: File[]) => Promise<void>;
   reset: () => void;
@@ -30,6 +33,7 @@ export function useCreditReportAnalysis(): AnalysisState {
   const [fileName, setFileName] = useState("");
   const [fileCount, setFileCount] = useState(0);
   const [error, setError] = useState("");
+  const [isBackendAvailable, setIsBackendAvailable] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -45,7 +49,33 @@ export function useCreditReportAnalysis(): AnalysisState {
     setFileCount(storedAnalysis.fileCount);
   }, []);
 
+  useEffect(() => {
+    let active = true;
+
+    async function refreshHealth() {
+      const healthy = await checkBackendHealth();
+      if (active) {
+        setIsBackendAvailable(healthy);
+      }
+    }
+
+    void refreshHealth();
+    const interval = window.setInterval(refreshHealth, HEALTH_CHECK_INTERVAL_MS);
+
+    return () => {
+      active = false;
+      window.clearInterval(interval);
+    };
+  }, []);
+
   async function analyzeBatch(files: File[]) {
+    const healthy = await checkBackendHealth();
+    setIsBackendAvailable(healthy);
+    if (!healthy) {
+      setError("API-ul nu este disponibil momentan.");
+      return;
+    }
+
     const nextFileName = batchFileLabel(files);
 
     setError("");
@@ -92,7 +122,7 @@ export function useCreditReportAnalysis(): AnalysisState {
     clearStoredAnalysis();
   }
 
-  return { report, batchReport, fileName, fileCount, error, isLoading, analyzeBatch, reset };
+  return { report, batchReport, fileName, fileCount, error, isBackendAvailable, isLoading, analyzeBatch, reset };
 }
 
 function batchFileLabel(files: File[]): string {
