@@ -19,7 +19,6 @@ import (
 const statsTimeout = 3 * time.Second
 
 type statisticsSnapshot struct {
-	Greeting       string `json:"greeting"`
 	DistinctGuests int    `json:"distinctGuests"`
 	ParserUses     int    `json:"parserUses"`
 	UpdatedAt      string `json:"updatedAt"`
@@ -86,13 +85,14 @@ func (s *statsStore) migrate(ctx context.Context) error {
 	_, err := s.db.ExecContext(ctx, `
 		create table if not exists app_statistics (
 			id boolean primary key default true check (id),
-			greeting text not null,
 			parser_uses bigint not null default 0,
 			updated_at timestamptz not null default now()
 		);
 
-		insert into app_statistics (id, greeting, parser_uses)
-		values (true, 'hello world', 0)
+		alter table app_statistics drop column if exists greeting;
+
+		insert into app_statistics (id, parser_uses)
+		values (true, 0)
 		on conflict (id) do nothing;
 
 		create table if not exists app_statistic_guests (
@@ -148,13 +148,12 @@ func (s *statsStore) snapshot(ctx context.Context) (statisticsSnapshot, error) {
 	var updatedAt time.Time
 	err := s.db.QueryRowContext(ctx, `
 		select
-			app_statistics.greeting,
 			(select count(*) from app_statistic_guests) as distinct_guests,
 			app_statistics.parser_uses,
 			app_statistics.updated_at
 		from app_statistics
 		where app_statistics.id = true
-	`).Scan(&snapshot.Greeting, &distinctGuests, &parserUses, &updatedAt)
+	`).Scan(&distinctGuests, &parserUses, &updatedAt)
 	if err != nil {
 		return statisticsSnapshot{}, err
 	}

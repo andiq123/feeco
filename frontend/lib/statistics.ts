@@ -1,5 +1,4 @@
 export type AppStatistics = {
-  greeting: string;
   distinctGuests: number;
   parserUses: number;
   updatedAt: string;

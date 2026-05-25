@@ -1,6 +1,6 @@
 "use client";
 
-import { Activity, Database, Users, WandSparkles } from "lucide-react";
+import { Activity, Users, WandSparkles } from "lucide-react";
 import { copy, type Language } from "@/lib/i18n";
 import type { AppStatistics } from "@/lib/statistics";
 import type { ReactNode } from "react";
@@ -27,17 +27,7 @@ export function StatisticsWidget({ language, statistics }: StatisticsWidgetProps
         </div>
       </div>
 
-      <div className="mt-5 rounded-[1.25rem] border border-[var(--line)] bg-white/70 p-3">
-        <div className="flex items-center gap-2 text-xs font-bold text-[var(--muted)]">
-          <Database className="h-4 w-4" aria-hidden="true" />
-          <span>{statistics?.greeting ?? labels.statisticsLoading}</span>
-        </div>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e6edf7]">
-          <div className="h-full rounded-full bg-[linear-gradient(90deg,var(--olive),var(--blue))]" style={{ width: statistics ? "72%" : "24%" }} />
-        </div>
-      </div>
-
-      <div className="mt-3 grid gap-3">
+      <div className="mt-5 grid gap-3">
         <MetricTile icon={<Users />} label={labels.distinctGuests} value={statistics ? compactNumber(distinctGuests) : "--"} tone="green" />
         <MetricTile icon={<WandSparkles />} label={labels.parserUses} value={statistics ? compactNumber(parserUses) : "--"} tone="blue" />
       </div>
