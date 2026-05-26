@@ -1,11 +1,8 @@
 package main
 
 import (
-	"encoding/base64"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
-	"strconv"
 	"testing"
 	"time"
 )
@@ -47,39 +44,6 @@ func TestWithAPIKeySkipsHealth(t *testing.T) {
 	}), "secret")
 
 	request := httptest.NewRequest(http.MethodGet, "/healthz", nil)
-	response := httptest.NewRecorder()
-
-	handler.ServeHTTP(response, request)
-
-	if response.Code != http.StatusOK {
-		t.Fatalf("response code = %d, want %d", response.Code, http.StatusOK)
-	}
-}
-
-func TestWithAPIKeyProtectsStatisticsStream(t *testing.T) {
-	handler := withAPIKey(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}), "secret")
-
-	request := httptest.NewRequest(http.MethodGet, "/api/statistics/stream", nil)
-	response := httptest.NewRecorder()
-
-	handler.ServeHTTP(response, request)
-
-	if response.Code != http.StatusUnauthorized {
-		t.Fatalf("response code = %d, want %d", response.Code, http.StatusUnauthorized)
-	}
-}
-
-func TestWithAPIKeyAllowsSignedStatisticsStreamToken(t *testing.T) {
-	handler := withAPIKey(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}), "secret")
-	expiresAt := time.Now().Add(30 * time.Second).Unix()
-	payload := base64.RawURLEncoding.EncodeToString([]byte(strconv.FormatInt(expiresAt, 10)))
-	token := payload + "." + statisticsStreamSignature(payload, "secret")
-
-	request := httptest.NewRequest(http.MethodGet, "/api/statistics/stream?token="+url.QueryEscape(token), nil)
 	response := httptest.NewRecorder()
 
 	handler.ServeHTTP(response, request)

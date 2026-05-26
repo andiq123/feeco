@@ -1,12 +1,9 @@
 import type { NextConfig } from "next";
 
-const DEFAULT_BACKEND_URL = "http://localhost:8080";
-
 const connectSources = [
   "'self'",
   "https://vitals.vercel-insights.com",
   "https://vercel.live",
-  ...websocketConnectSources(),
 ].join(" ");
 
 const scriptSrc = [
@@ -51,29 +48,5 @@ const nextConfig: NextConfig = {
     ];
   },
 };
-
-function websocketConnectSources(): string[] {
-  const origin = backendWebSocketOrigin(process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL);
-  if (!origin) {
-    return [];
-  }
-  return [origin];
-}
-
-function backendWebSocketOrigin(backendURL: string): string {
-  try {
-    const url = new URL("/", backendURL);
-    if (url.protocol === "https:") {
-      url.protocol = "wss:";
-    } else if (url.protocol === "http:") {
-      url.protocol = "ws:";
-    } else {
-      return "";
-    }
-    return url.origin;
-  } catch {
-    return "";
-  }
-}
 
 export default nextConfig;
