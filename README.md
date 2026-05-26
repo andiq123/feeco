@@ -62,3 +62,9 @@ npm run build
 ## Status
 
 Feeco is an open-source personal project focused on making credit report data easier to understand. It is not financial advice and does not replace a bank, lender, credit bureau, or financial professional.
+
+## License
+
+Feeco is released under the MIT License. You can use, copy, modify, distribute, and reuse the code in personal or commercial projects, provided that the copyright notice and license text are included with substantial copies of the software.
+
+See [LICENSE](LICENSE) for the full license text.
