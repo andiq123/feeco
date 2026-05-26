@@ -4,7 +4,7 @@ const connectSources = [
   "'self'",
   "https://vitals.vercel-insights.com",
   "https://vercel.live",
-  ...websocketConnectSources(process.env.NEXT_PUBLIC_BACKEND_WS_URL),
+  ...websocketConnectSources(process.env.BACKEND_URL),
 ].join(" ");
 
 const scriptSrc = [
@@ -57,7 +57,14 @@ function websocketConnectSources(value: string | undefined): string[] {
 
   try {
     const url = new URL(value);
-    return url.protocol === "wss:" || url.protocol === "ws:" ? [url.origin] : [];
+    if (url.protocol === "https:") {
+      url.protocol = "wss:";
+    } else if (url.protocol === "http:") {
+      url.protocol = "ws:";
+    } else {
+      return [];
+    }
+    return [url.origin];
   } catch {
     return [];
   }

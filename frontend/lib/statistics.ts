@@ -6,6 +6,7 @@ export type AppStatistics = {
 };
 
 type StatisticsStreamToken = {
+  streamURL: string;
   token: string;
 };
 
@@ -36,7 +37,7 @@ export async function recordVisit(): Promise<void> {
   }
 }
 
-export async function fetchStatisticsStreamToken(): Promise<string> {
+export async function fetchStatisticsStreamToken(): Promise<StatisticsStreamToken> {
   const response = await fetch("/api/statistics/stream-token", {
     cache: "no-store",
     credentials: "same-origin",
@@ -45,17 +46,7 @@ export async function fetchStatisticsStreamToken(): Promise<string> {
     throw new Error("statistics stream unavailable");
   }
   const body = (await response.json()) as StatisticsStreamToken;
-  return body.token;
-}
-
-export function statisticsStreamURL(token: string): string {
-  const baseURL = process.env.NEXT_PUBLIC_BACKEND_WS_URL || websocketOriginFromLocation();
-  const url = new URL("/api/statistics/stream", baseURL);
-  url.searchParams.set("token", token);
-  return url.toString();
-}
-
-function websocketOriginFromLocation(): string {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.host}`;
+  const url = new URL(body.streamURL);
+  url.searchParams.set("token", body.token);
+  return { streamURL: url.toString(), token: body.token };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { fetchStatistics, fetchStatisticsStreamToken, recordVisit, statisticsStreamURL, type AppStatistics } from "@/lib/statistics";
+import { fetchStatistics, fetchStatisticsStreamToken, recordVisit, type AppStatistics } from "@/lib/statistics";
 
 const STATISTICS_REFRESH_MS = 20_000;
 const STATISTICS_STREAM_RETRY_MS = 4_000;
@@ -24,12 +24,12 @@ export function useStatistics() {
 
     async function connectStream() {
       try {
-        const token = await fetchStatisticsStreamToken();
+        const stream = await fetchStatisticsStreamToken();
         if (!active) {
           return;
         }
 
-        socket = new WebSocket(statisticsStreamURL(token));
+        socket = new WebSocket(stream.streamURL);
         socket.onmessage = (event) => {
           try {
             const nextStatistics = JSON.parse(event.data) as AppStatistics;
