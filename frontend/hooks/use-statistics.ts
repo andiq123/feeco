@@ -25,7 +25,7 @@ export function useStatistics() {
     async function connectStream() {
       try {
         const stream = await fetchStatisticsStreamToken();
-        if (!active) {
+        if (!active || !stream) {
           return;
         }
 

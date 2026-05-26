@@ -19,6 +19,9 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!streamURL) {
     return new NextResponse("statistics stream unavailable", { status: 503 });
   }
+  if (isVercelWebSocketURL(streamURL)) {
+    return new NextResponse("statistics stream unavailable on vercel backend", { status: 503 });
+  }
 
   const expiresAt = Math.floor(Date.now() / 1000) + STREAM_TOKEN_TTL_SECONDS;
   const payload = Buffer.from(String(expiresAt)).toString("base64url");
@@ -50,5 +53,13 @@ function statisticsStreamURL(backendURL: string): string {
     return url.toString();
   } catch {
     return "";
+  }
+}
+
+function isVercelWebSocketURL(value: string): boolean {
+  try {
+    return new URL(value).hostname.endsWith(".vercel.app");
+  } catch {
+    return false;
   }
 }

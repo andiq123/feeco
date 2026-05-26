@@ -37,13 +37,13 @@ export async function recordVisit(): Promise<void> {
   }
 }
 
-export async function fetchStatisticsStreamToken(): Promise<StatisticsStreamToken> {
+export async function fetchStatisticsStreamToken(): Promise<StatisticsStreamToken | null> {
   const response = await fetch("/api/statistics/stream-token", {
     cache: "no-store",
     credentials: "same-origin",
   });
   if (!response.ok) {
-    throw new Error("statistics stream unavailable");
+    return null;
   }
   const body = (await response.json()) as StatisticsStreamToken;
   const url = new URL(body.streamURL);
