@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 )
 
 const apiKeyHeader = "X-API-Key"
@@ -48,6 +49,10 @@ func withSecurityHeaders(next http.Handler) http.Handler {
 func withAPIKey(next http.Handler, apiKey string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/healthz" || r.Method == http.MethodOptions || apiKey == "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		if r.URL.Path == "/api/statistics/stream" && validStatisticsStreamToken(r.URL.Query().Get("token"), apiKey, time.Now()) {
 			next.ServeHTTP(w, r)
 			return
 		}

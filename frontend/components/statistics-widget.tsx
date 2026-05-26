@@ -3,6 +3,7 @@
 import { Sparkles, Users, WandSparkles } from "lucide-react";
 import { copy, type Language } from "@/lib/i18n";
 import type { AppStatistics } from "@/lib/statistics";
+import { useEffect, useRef } from "react";
 import type { ReactNode } from "react";
 
 type StatisticsWidgetProps = {
@@ -29,25 +30,37 @@ export function StatisticsWidget({ language, statistics }: StatisticsWidgetProps
       </div>
 
       <div className="mt-2 grid grid-cols-2 gap-2">
-        <MetricTile icon={<Users />} label={labels.distinctGuests(distinctGuests)} value={statistics ? compactNumber(distinctGuests) : "--"} tone="green" />
-        <MetricTile icon={<WandSparkles />} label={labels.parserUses(parserUses)} value={statistics ? compactNumber(parserUses) : "--"} tone="blue" />
+        <MetricTile icon={<Users />} label={labels.distinctGuests(distinctGuests)} rawValue={distinctGuests} value={statistics ? compactNumber(distinctGuests) : "--"} tone="green" />
+        <MetricTile icon={<WandSparkles />} label={labels.parserUses(parserUses)} rawValue={parserUses} value={statistics ? compactNumber(parserUses) : "--"} tone="blue" />
       </div>
     </aside>
   );
 }
 
-function MetricTile({ icon, label, value, tone }: { icon: ReactNode; label: string; value: string; tone: "blue" | "green" }) {
+function MetricTile({ icon, label, rawValue, value, tone }: { icon: ReactNode; label: string; rawValue: number; value: string; tone: "blue" | "green" }) {
   const toneClass = tone === "green" ? "text-[var(--olive)]" : "text-[var(--blue)]";
+  const changed = useValueChanged(rawValue);
 
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--line)] bg-white/74 px-2.5 py-2 shadow-sm shadow-slate-900/5">
+    <div className={`stats-metric ${changed ? "stats-metric--changed" : ""} flex min-w-0 items-center gap-2 rounded-2xl border border-[var(--line)] bg-white/74 px-2.5 py-2 shadow-sm shadow-slate-900/5`}>
       <div className={`shrink-0 ${toneClass} [&_svg]:h-4.5 [&_svg]:w-4.5`}>{icon}</div>
       <div className="min-w-0">
-        <p className="numeric text-base font-black leading-none text-[var(--ink)]">{value}</p>
+        <p className="numeric stats-number text-base font-black leading-none text-[var(--ink)]" key={value}>{value}</p>
         <p className="mt-0.5 truncate text-[0.62rem] font-bold leading-3 text-[var(--muted)]">{label}</p>
       </div>
     </div>
   );
+}
+
+function useValueChanged(value: number): boolean {
+  const previousValueRef = useRef(value);
+  const changed = previousValueRef.current !== value;
+
+  useEffect(() => {
+    previousValueRef.current = value;
+  }, [value]);
+
+  return changed;
 }
 
 function compactNumber(value: number): string {
