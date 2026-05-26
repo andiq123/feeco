@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
+import { backendWebSocketOrigin } from "./lib/backend-config.ts";
 
 const connectSources = [
   "'self'",
   "https://vitals.vercel-insights.com",
   "https://vercel.live",
-  ...websocketConnectSources(process.env.BACKEND_URL),
+  ...websocketConnectSources(),
 ].join(" ");
 
 const scriptSrc = [
@@ -50,24 +51,12 @@ const nextConfig: NextConfig = {
   },
 };
 
-function websocketConnectSources(value: string | undefined): string[] {
-  if (!value) {
+function websocketConnectSources(): string[] {
+  const origin = backendWebSocketOrigin();
+  if (!origin) {
     return [];
   }
-
-  try {
-    const url = new URL(value);
-    if (url.protocol === "https:") {
-      url.protocol = "wss:";
-    } else if (url.protocol === "http:") {
-      url.protocol = "ws:";
-    } else {
-      return [];
-    }
-    return [url.origin];
-  } catch {
-    return [];
-  }
+  return [origin];
 }
 
 export default nextConfig;

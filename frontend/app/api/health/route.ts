@@ -1,17 +1,16 @@
 import { NextResponse } from "next/server";
+import { backendURL } from "@/lib/backend-config";
 
-const DEFAULT_BACKEND_URL = "http://localhost:8080";
 const HEALTH_TIMEOUT_MS = 2500;
 
 export const runtime = "nodejs";
 
 export async function GET() {
-  const backendURL = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL;
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), HEALTH_TIMEOUT_MS);
 
   try {
-    const response = await fetch(`${backendURL}/healthz`, {
+    const response = await fetch(`${backendURL()}/healthz`, {
       cache: "no-store",
       signal: controller.signal,
     });

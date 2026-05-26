@@ -1,7 +1,7 @@
 import { createHmac } from "node:crypto";
 import { NextResponse } from "next/server";
+import { backendWebSocketURL, isVercelWebSocketURL } from "@/lib/backend-config";
 
-const DEFAULT_BACKEND_URL = "http://localhost:8080";
 const STREAM_TOKEN_TTL_SECONDS = 60;
 
 export const runtime = "nodejs";
@@ -15,7 +15,7 @@ export async function GET(request: Request): Promise<NextResponse> {
   if (!apiKey) {
     return new NextResponse("statistics stream unavailable", { status: 503 });
   }
-  const streamURL = statisticsStreamURL(process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL);
+  const streamURL = backendWebSocketURL("/api/statistics/stream");
   if (!streamURL) {
     return new NextResponse("statistics stream unavailable", { status: 503 });
   }
@@ -38,28 +38,4 @@ function isAppFetch(request: Request): boolean {
     return false;
   }
   return site === "same-origin" || site === "same-site";
-}
-
-function statisticsStreamURL(backendURL: string): string {
-  try {
-    const url = new URL("/api/statistics/stream", backendURL);
-    if (url.protocol === "https:") {
-      url.protocol = "wss:";
-    } else if (url.protocol === "http:") {
-      url.protocol = "ws:";
-    } else {
-      return "";
-    }
-    return url.toString();
-  } catch {
-    return "";
-  }
-}
-
-function isVercelWebSocketURL(value: string): boolean {
-  try {
-    return new URL(value).hostname.endsWith(".vercel.app");
-  } catch {
-    return false;
-  }
 }

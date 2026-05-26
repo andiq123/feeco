@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { backendURL } from "@/lib/backend-config";
 
-const DEFAULT_BACKEND_URL = "http://localhost:8080";
 const VISITOR_COOKIE = "feeco_visitor_id";
 const VISITOR_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
@@ -29,7 +29,6 @@ export async function POST(request: Request): Promise<NextResponse> {
 }
 
 async function proxyStatisticsRequest(path: string, method: "GET" | "POST", requestBody: string | undefined, fallback: NextResponse): Promise<NextResponse> {
-  const backendURL = process.env.BACKEND_URL ?? DEFAULT_BACKEND_URL;
   const apiKey = process.env.BACKEND_API_KEY;
   const headers = new Headers();
 
@@ -42,7 +41,7 @@ async function proxyStatisticsRequest(path: string, method: "GET" | "POST", requ
   }
 
   try {
-    const response = await fetch(`${backendURL}${path}`, {
+    const response = await fetch(`${backendURL()}${path}`, {
       method,
       body: requestBody,
       cache: "no-store",
