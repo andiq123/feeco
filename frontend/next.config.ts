@@ -4,6 +4,7 @@ const connectSources = [
   "'self'",
   "https://vitals.vercel-insights.com",
   "https://vercel.live",
+  ...websocketConnectSources(process.env.NEXT_PUBLIC_BACKEND_WS_URL),
 ].join(" ");
 
 const scriptSrc = [
@@ -48,5 +49,18 @@ const nextConfig: NextConfig = {
     ];
   },
 };
+
+function websocketConnectSources(value: string | undefined): string[] {
+  if (!value) {
+    return [];
+  }
+
+  try {
+    const url = new URL(value);
+    return url.protocol === "wss:" || url.protocol === "ws:" ? [url.origin] : [];
+  } catch {
+    return [];
+  }
+}
 
 export default nextConfig;
