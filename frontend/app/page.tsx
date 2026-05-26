@@ -10,10 +10,11 @@ import { useStatistics } from "@/hooks/use-statistics";
 import { copy, type Language } from "@/lib/i18n";
 import type { BatchCreditReport, CreditReport } from "@/lib/types";
 import { AlertTriangle } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 
 const FALLBACK_TRANSITION_MS = 520;
+const TOAST_EXIT_MS = 280;
 
 type PageView =
   | { kind: "upload" }
@@ -110,15 +111,45 @@ export default function Home() {
 }
 
 function RejectedFilesToast({ files, language }: { files: string[]; language: Language }) {
-  if (files.length === 0) {
+  const [displayedFiles, setDisplayedFiles] = useState(files);
+  const [isVisible, setIsVisible] = useState(files.length > 0);
+  const exitTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (exitTimeoutRef.current) {
+      window.clearTimeout(exitTimeoutRef.current);
+      exitTimeoutRef.current = null;
+    }
+
+    if (files.length > 0) {
+      setDisplayedFiles(files);
+      setIsVisible(true);
+      return;
+    }
+
+    setIsVisible(false);
+    exitTimeoutRef.current = window.setTimeout(() => {
+      setDisplayedFiles([]);
+      exitTimeoutRef.current = null;
+    }, TOAST_EXIT_MS);
+
+    return () => {
+      if (exitTimeoutRef.current) {
+        window.clearTimeout(exitTimeoutRef.current);
+        exitTimeoutRef.current = null;
+      }
+    };
+  }, [files]);
+
+  if (displayedFiles.length === 0) {
     return null;
   }
 
   const labels = copy[language].upload;
-  const fileList = files.join(", ");
+  const fileList = displayedFiles.join(", ");
 
   return (
-    <div className="fixed inset-x-3 top-3 z-[70] mx-auto flex max-w-lg items-start gap-3 rounded-2xl border border-[rgba(224,93,93,0.22)] bg-white/96 p-3 text-sm text-[var(--ink)] shadow-[0_18px_52px_rgba(39,62,92,0.18)] backdrop-blur-xl sm:right-5 sm:left-auto sm:top-5" role="status" aria-live="polite">
+    <div className={`rejected-files-toast ${isVisible ? "rejected-files-toast--open" : "rejected-files-toast--closed"} fixed inset-x-3 top-3 z-[70] mx-auto flex max-w-lg items-start gap-3 rounded-2xl border border-[rgba(224,93,93,0.22)] bg-white/96 p-3 text-sm text-[var(--ink)] shadow-[0_18px_52px_rgba(39,62,92,0.18)] backdrop-blur-xl sm:right-5 sm:left-auto sm:top-5`} role="status" aria-live="polite">
       <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1f1] text-[var(--clay)]">
         <AlertTriangle className="h-5 w-5" aria-hidden="true" />
       </div>
