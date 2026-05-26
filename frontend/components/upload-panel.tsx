@@ -158,7 +158,7 @@ function Header({ language, onLanguageChange }: Pick<UploadPanelProps, "language
 }
 
 function CoffeeLink() {
-  const coffeeURL = validExternalURL(process.env.NEXT_PUBLIC_COFFEE_URL || process.env.NEXT_PUBLIC_PAYPAL_COFFEE_URL || "https://buymeacoffee.com/andiq123");
+  const coffeeURL = normalizeExternalURL(process.env.NEXT_PUBLIC_COFFEE_URL || "https://buymeacoffee.com/andiq123");
 
   if (!coffeeURL) {
     return null;
@@ -178,13 +178,18 @@ function CoffeeLink() {
   );
 }
 
-function validExternalURL(value: string | undefined): string {
-  if (!value) {
+function normalizeExternalURL(value: string | undefined): string {
+  const rawValue = value?.trim();
+
+  if (!rawValue) {
     return "";
   }
+
+  const normalizedValue = /^https?:\/\//i.test(rawValue) ? rawValue : `https://${rawValue}`;
+
   try {
-    const url = new URL(value);
-    return url.protocol === "https:" ? url.toString() : "";
+    const url = new URL(normalizedValue);
+    return url.protocol === "https:" || url.protocol === "http:" ? url.toString() : "";
   } catch {
     return "";
   }

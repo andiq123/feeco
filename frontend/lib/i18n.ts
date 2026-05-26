@@ -103,7 +103,7 @@ export const copy = {
       parsingDocument: "În analiză",
       rejectedReportTitle: "PDF omis",
       rejectedReportBody: (files: string) => `${files} nu pare să fie raport de la Biroul de Credit. Continuăm cu documentele valide.`,
-      brand: "Analizor de rapoarte Biroul de Credit",
+      brand: "Vizualizator de rapoarte Biroul de Credit",
       choose: "Trage sau alege rapoarte PDF",
       drop: "Lasă rapoartele aici",
       secureTitle: "Privat",
