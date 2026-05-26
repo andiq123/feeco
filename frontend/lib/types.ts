@@ -26,6 +26,7 @@ export type BatchCreditReport = {
   reports: CreditReport[];
   timeline: TimelinePoint[];
   summary: BatchSummary;
+  rejectedFiles?: string[];
 };
 
 export type BatchSummary = {

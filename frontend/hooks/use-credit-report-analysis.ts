@@ -1,12 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { analyzeCreditReport, analyzeCreditReportBatch } from "@/lib/analyze-report";
 import { checkBackendHealth } from "@/lib/backend-health";
 import type { BatchCreditReport, CreditReport } from "@/lib/types";
 
 const ANALYSIS_STORAGE_KEY = "feeco.analysis.result";
 const HEALTH_CHECK_INTERVAL_MS = 30_000;
+const REJECTED_FILES_NOTICE_MS = 5_000;
 
 type StoredAnalysis = {
   report: CreditReport | null;
@@ -21,6 +22,7 @@ export type AnalysisState = {
   fileName: string;
   fileCount: number;
   parsingFiles: string[];
+  rejectedFiles: string[];
   error: string;
   isBackendAvailable: boolean;
   isLoading: boolean;
@@ -34,9 +36,11 @@ export function useCreditReportAnalysis(): AnalysisState {
   const [fileName, setFileName] = useState("");
   const [fileCount, setFileCount] = useState(0);
   const [parsingFiles, setParsingFiles] = useState<string[]>([]);
+  const [rejectedFiles, setRejectedFiles] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [isBackendAvailable, setIsBackendAvailable] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
+  const rejectedFilesTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const storedAnalysis = readStoredAnalysis();
@@ -49,6 +53,14 @@ export function useCreditReportAnalysis(): AnalysisState {
     setBatchReport(storedAnalysis.batchReport);
     setFileName(storedAnalysis.fileName);
     setFileCount(storedAnalysis.fileCount);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (rejectedFilesTimeoutRef.current) {
+        clearTimeout(rejectedFilesTimeoutRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -81,6 +93,7 @@ export function useCreditReportAnalysis(): AnalysisState {
     const nextFileName = batchFileLabel(files);
 
     setError("");
+    setRejectedFiles([]);
     setReport(null);
     setBatchReport(null);
     setFileName(nextFileName);
@@ -100,6 +113,7 @@ export function useCreditReportAnalysis(): AnalysisState {
         });
       } else {
         const analyzedBatchReport = await analyzeCreditReportBatch(files);
+        showRejectedFiles(analyzedBatchReport.rejectedFiles ?? []);
         setBatchReport(analyzedBatchReport);
         writeStoredAnalysis({
           report: null,
@@ -122,12 +136,30 @@ export function useCreditReportAnalysis(): AnalysisState {
     setFileName("");
     setFileCount(0);
     setParsingFiles([]);
+    setRejectedFiles([]);
     setError("");
     setIsLoading(false);
     clearStoredAnalysis();
   }
 
-  return { report, batchReport, fileName, fileCount, parsingFiles, error, isBackendAvailable, isLoading, analyzeBatch, reset };
+  return { report, batchReport, fileName, fileCount, parsingFiles, rejectedFiles, error, isBackendAvailable, isLoading, analyzeBatch, reset };
+
+  function showRejectedFiles(files: string[]) {
+    if (rejectedFilesTimeoutRef.current) {
+      clearTimeout(rejectedFilesTimeoutRef.current);
+    }
+
+    if (files.length === 0) {
+      setRejectedFiles([]);
+      return;
+    }
+
+    setRejectedFiles(files);
+    rejectedFilesTimeoutRef.current = setTimeout(() => {
+      setRejectedFiles([]);
+      rejectedFilesTimeoutRef.current = null;
+    }, REJECTED_FILES_NOTICE_MS);
+  }
 }
 
 function batchFileLabel(files: File[]): string {

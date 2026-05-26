@@ -7,8 +7,9 @@ import { StatisticsWidget } from "@/components/statistics-widget";
 import { UploadPanel } from "@/components/upload-panel";
 import { useCreditReportAnalysis } from "@/hooks/use-credit-report-analysis";
 import { useStatistics } from "@/hooks/use-statistics";
-import type { Language } from "@/lib/i18n";
+import { copy, type Language } from "@/lib/i18n";
 import type { BatchCreditReport, CreditReport } from "@/lib/types";
+import { AlertTriangle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { flushSync } from "react-dom";
 
@@ -58,43 +59,74 @@ export default function Home() {
   }, [currentView, displayedView]);
 
   const shellClassName = `page-view-shell ${pageTransitionClassName(fallbackTransitionState, analysis.isLoading)}`;
+  const rejectedFilesToast = <RejectedFilesToast files={analysis.rejectedFiles} language={language} />;
 
   if (displayedView.kind === "batch") {
     return (
-      <div className={shellClassName} key={`batch-${displayedView.fileName}`}>
-        <BatchReportView batchReport={displayedView.batchReport} fileName={displayedView.fileName} language={language} onLanguageChange={setLanguage} onReturn={analysis.reset} />
-      </div>
+      <>
+        {rejectedFilesToast}
+        <div className={shellClassName} key={`batch-${displayedView.fileName}`}>
+          <BatchReportView batchReport={displayedView.batchReport} fileName={displayedView.fileName} language={language} onLanguageChange={setLanguage} onReturn={analysis.reset} />
+        </div>
+      </>
     );
   }
 
   if (displayedView.kind === "report") {
     return (
-      <div className={shellClassName} key={`report-${displayedView.fileName}`}>
-        <ReportView report={displayedView.report} fileName={displayedView.fileName} language={language} onLanguageChange={setLanguage} onReturn={analysis.reset} />
-      </div>
+      <>
+        {rejectedFilesToast}
+        <div className={shellClassName} key={`report-${displayedView.fileName}`}>
+          <ReportView report={displayedView.report} fileName={displayedView.fileName} language={language} onLanguageChange={setLanguage} onReturn={analysis.reset} />
+        </div>
+      </>
     );
   }
 
   return (
-    <main className={`min-h-screen px-3 py-3 text-[var(--ink)] sm:px-6 sm:py-5 lg:px-8 ${shellClassName}`} key="upload">
-      <IntroAnimation />
-      <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
-        <div className="min-w-0">
-          <UploadPanel
-            fileName={analysis.fileName}
-            fileCount={analysis.fileCount}
-            parsingFiles={analysis.parsingFiles}
-            error={analysis.error}
-            isBackendAvailable={analysis.isBackendAvailable}
-            isLoading={analysis.isLoading}
-            language={language}
-            onLanguageChange={setLanguage}
-            onAnalyze={analysis.analyzeBatch}
-          />
+    <>
+      {rejectedFilesToast}
+      <main className={`min-h-screen px-3 py-3 text-[var(--ink)] sm:px-6 sm:py-5 lg:px-8 ${shellClassName}`} key="upload">
+        <IntroAnimation />
+        <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start">
+          <div className="min-w-0">
+            <UploadPanel
+              fileName={analysis.fileName}
+              fileCount={analysis.fileCount}
+              parsingFiles={analysis.parsingFiles}
+              error={analysis.error}
+              isBackendAvailable={analysis.isBackendAvailable}
+              isLoading={analysis.isLoading}
+              language={language}
+              onLanguageChange={setLanguage}
+              onAnalyze={analysis.analyzeBatch}
+            />
+          </div>
+          <StatisticsWidget language={language} statistics={statistics} />
         </div>
-        <StatisticsWidget language={language} statistics={statistics} />
+      </main>
+    </>
+  );
+}
+
+function RejectedFilesToast({ files, language }: { files: string[]; language: Language }) {
+  if (files.length === 0) {
+    return null;
+  }
+
+  const labels = copy[language].upload;
+  const fileList = files.join(", ");
+
+  return (
+    <div className="fixed inset-x-3 top-3 z-[70] mx-auto flex max-w-lg items-start gap-3 rounded-2xl border border-[rgba(224,93,93,0.22)] bg-white/96 p-3 text-sm text-[var(--ink)] shadow-[0_18px_52px_rgba(39,62,92,0.18)] backdrop-blur-xl sm:right-5 sm:left-auto sm:top-5" role="status" aria-live="polite">
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#fff1f1] text-[var(--clay)]">
+        <AlertTriangle className="h-5 w-5" aria-hidden="true" />
       </div>
-    </main>
+      <div className="min-w-0">
+        <p className="font-black leading-5">{labels.rejectedReportTitle}</p>
+        <p className="mt-0.5 text-xs font-bold leading-5 text-[var(--muted)]">{labels.rejectedReportBody(fileList)}</p>
+      </div>
+    </div>
   );
 }
 

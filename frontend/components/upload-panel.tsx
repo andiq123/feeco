@@ -158,16 +158,16 @@ function Header({ language, onLanguageChange }: Pick<UploadPanelProps, "language
 }
 
 function CoffeeLink() {
-  const paypalURL = validExternalURL(process.env.NEXT_PUBLIC_PAYPAL_COFFEE_URL);
+  const coffeeURL = validExternalURL(process.env.NEXT_PUBLIC_COFFEE_URL || process.env.NEXT_PUBLIC_PAYPAL_COFFEE_URL || "https://buymeacoffee.com/andiq123");
 
-  if (!paypalURL) {
+  if (!coffeeURL) {
     return null;
   }
 
   return (
     <a
       className="inline-flex h-10 items-center gap-2 rounded-full border border-[rgba(50,120,255,0.18)] bg-white/70 px-3 text-xs font-black text-[var(--ink)] shadow-sm transition hover:-translate-y-0.5 hover:border-[rgba(50,120,255,0.34)] hover:bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--blue)]"
-      href={paypalURL}
+      href={coffeeURL}
       target="_blank"
       rel="noreferrer"
     >

@@ -10,9 +10,10 @@ type Report struct {
 }
 
 type BatchReport struct {
-	Reports  []Report        `json:"reports"`
-	Timeline []TimelinePoint `json:"timeline"`
-	Summary  BatchSummary    `json:"summary"`
+	Reports       []Report        `json:"reports"`
+	Timeline      []TimelinePoint `json:"timeline"`
+	Summary       BatchSummary    `json:"summary"`
+	RejectedFiles []string        `json:"rejectedFiles"`
 }
 
 type BatchSummary struct {

@@ -2,12 +2,13 @@ package analyzer
 
 import "fmt"
 
-func buildBatchReport(reports []Report) BatchReport {
+func buildBatchReport(reports []Report, rejectedFiles []string) BatchReport {
 	timeline := buildTimeline(reports)
 	return BatchReport{
-		Reports:  reports,
-		Timeline: timeline,
-		Summary:  buildBatchSummary(timeline),
+		Reports:       reports,
+		Timeline:      timeline,
+		Summary:       buildBatchSummary(timeline),
+		RejectedFiles: rejectedFiles,
 	}
 }
 
