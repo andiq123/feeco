@@ -28,13 +28,13 @@ const (
 	statsBroadcastSize = 1
 )
 
-type statisticsSnapshot struct {
+type statisticsSnapshotDTO struct {
 	DistinctGuests int    `json:"distinctGuests"`
 	ParserUses     int    `json:"parserUses"`
 	UpdatedAt      string `json:"updatedAt"`
 }
 
-type statisticsVisitRequest struct {
+type statisticsVisitDTO struct {
 	VisitorID string `json:"visitorId"`
 }
 
@@ -48,7 +48,7 @@ type statsStore struct {
 
 type statsClient struct {
 	conn *websocket.Conn
-	send chan statisticsSnapshot
+	send chan statisticsSnapshotDTO
 }
 
 var activeStats *statsStore
@@ -86,11 +86,11 @@ func newStatsStore(databaseURL string, secret string, allowedOrigins map[string]
 	return store, nil
 }
 
-func recordParserUse(r *http.Request, parserUses int) {
-	if activeStats == nil || parserUses <= 0 {
+func recordParserRun(r *http.Request) {
+	if activeStats == nil {
 		return
 	}
-	if err := activeStats.recordParserUse(r.Context(), parserUses); err != nil {
+	if err := activeStats.recordParserUse(r.Context(), 1); err != nil {
 		slog.Warn("record statistics", "error", err)
 	}
 }
@@ -106,7 +106,7 @@ func (s *statsStore) handleStatistics(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *statsStore) handleStatisticsVisit(w http.ResponseWriter, r *http.Request) {
-	var request statisticsVisitRequest
+	var request statisticsVisitDTO
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 512)).Decode(&request); err != nil {
 		http.Error(w, "invalid visit payload", http.StatusBadRequest)
 		return
@@ -147,7 +147,7 @@ func (s *statsStore) handleStatisticsStream(w http.ResponseWriter, r *http.Reque
 
 	client := &statsClient{
 		conn: conn,
-		send: make(chan statisticsSnapshot, statsBroadcastSize),
+		send: make(chan statisticsSnapshotDTO, statsBroadcastSize),
 	}
 	s.addClient(client)
 
@@ -237,11 +237,11 @@ func (s *statsStore) touchUpdatedAt(ctx context.Context) {
 	}
 }
 
-func (s *statsStore) snapshot(ctx context.Context) (statisticsSnapshot, error) {
+func (s *statsStore) snapshot(ctx context.Context) (statisticsSnapshotDTO, error) {
 	ctx, cancel := context.WithTimeout(ctx, statsTimeout)
 	defer cancel()
 
-	var snapshot statisticsSnapshot
+	var snapshot statisticsSnapshotDTO
 	var distinctGuests int64
 	var parserUses int64
 	var updatedAt time.Time
@@ -254,7 +254,7 @@ func (s *statsStore) snapshot(ctx context.Context) (statisticsSnapshot, error) {
 		where app_statistics.id = true
 	`).Scan(&distinctGuests, &parserUses, &updatedAt)
 	if err != nil {
-		return statisticsSnapshot{}, err
+		return statisticsSnapshotDTO{}, err
 	}
 
 	snapshot.DistinctGuests = int(distinctGuests)
@@ -348,7 +348,7 @@ func (s *statsStore) writeClient(client *statsClient) {
 	}
 }
 
-func (c *statsClient) sendLatest(snapshot statisticsSnapshot) {
+func (c *statsClient) sendLatest(snapshot statisticsSnapshotDTO) {
 	select {
 	case c.send <- snapshot:
 	default:

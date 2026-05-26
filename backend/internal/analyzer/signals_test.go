@@ -14,7 +14,7 @@ DA
 Legendă:
 `
 
-	inquiries := detectInquiries(text, "2026-05-16")
+	inquiries := detectInquiries(text, usefulLines(text), "2026-05-16")
 	if len(inquiries) != 1 {
 		t.Fatalf("expected 1 inquiry, got %d", len(inquiries))
 	}
@@ -37,7 +37,7 @@ Legendă:
 func TestDetectInquiriesMarksExpiredAfterSixMonths(t *testing.T) {
 	text := `Data ultimei interogari 16-01-2026`
 
-	inquiries := detectInquiries(text, "2026-08-01")
+	inquiries := detectInquiries(text, usefulLines(text), "2026-08-01")
 	if len(inquiries) != 1 {
 		t.Fatalf("expected 1 inquiry, got %d", len(inquiries))
 	}

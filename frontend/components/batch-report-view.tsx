@@ -9,10 +9,10 @@ import { ResultToolbar } from "@/components/result-shell";
 import { useReportTransition } from "@/hooks/use-report-transition";
 import { formatReportMonth } from "@/lib/formatters";
 import { copy, type Language } from "@/lib/i18n";
-import { inferNextRange, sameTimelineState, scoreValue, trendBetweenPoints } from "@/lib/timeline-metrics";
+import { sameTimelineState, scoreValue, trendBetweenPoints } from "@/lib/timeline-metrics";
 import type { BatchCreditReport, TimelinePoint } from "@/lib/types";
-import type { KeyboardEvent, PointerEvent as ReactPointerEvent } from "react";
-import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent, MouseEvent, PointerEvent as ReactPointerEvent } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type BatchReportViewProps = {
   batchReport: BatchCreditReport;
@@ -93,10 +93,11 @@ function HeaderScoreProgression({
   onSelect: (index: number) => void;
 }) {
   const labels = copy[language].batch;
-  const selectedTimeline = timeline.slice(rangeStartIndex, selectedIndex + 1);
-  const selectedScores = selectedTimeline.map(scoreValue).filter((score) => score > 0);
-  const scores = selectedScores.length > 0 ? selectedScores : timeline.map(scoreValue).filter((score) => score > 0);
-  const progression = compactTimeline(timeline);
+  const progression = useMemo(() => compactTimeline(timeline), [timeline]);
+  const timelineScores = useMemo(() => timeline.map(scoreValue).filter(isPositiveScore), [timeline]);
+  const selectedTimeline = useMemo(() => timeline.slice(rangeStartIndex, selectedIndex + 1), [rangeStartIndex, selectedIndex, timeline]);
+  const selectedScores = useMemo(() => selectedTimeline.map(scoreValue).filter(isPositiveScore), [selectedTimeline]);
+  const scores = selectedScores.length > 0 ? selectedScores : timelineScores;
   const hiddenCount = timeline.length - progression.length;
 
   if (scores.length === 0) {
@@ -105,7 +106,7 @@ function HeaderScoreProgression({
 
   const selectedMinScore = Math.min(...scores);
   const selectedMaxScore = Math.max(...scores);
-  const graphScores = timeline.map(scoreValue).filter((score) => score > 0);
+  const graphScores = timelineScores;
   const graphMinScore = Math.min(...graphScores);
   const graphMaxScore = Math.max(...graphScores);
   const selectedFirstPoint = selectedTimeline[0] ?? timeline[0];
@@ -117,12 +118,6 @@ function HeaderScoreProgression({
   const resetRange = () => {
     onRangeStartChange(0);
     onSelect(timeline.length - 1);
-  };
-  const handleRangeSelect = (index: number) => {
-    const nextRange = inferNextRange({ index, rangeStartIndex, selectedIndex, lastIndex: timeline.length - 1 });
-
-    onRangeStartChange(nextRange.startIndex);
-    onSelect(nextRange.endIndex);
   };
   const handleStartMove = (index: number) => {
     onRangeStartChange(Math.min(index, selectedIndex));
@@ -157,7 +152,7 @@ function HeaderScoreProgression({
         </button>
       </div>
       <div className="smooth-layout min-h-[10.75rem] flex-1">
-        <ProgressionLine timeline={progression} language={language} maxScore={graphMaxScore} minScore={graphMinScore} rangeStartIndex={rangeStartIndex} selectedIndex={selectedIndex} onStartMove={handleStartMove} onEndMove={handleEndMove} onSelect={handleRangeSelect} compact />
+        <ProgressionLine timeline={progression} language={language} maxScore={graphMaxScore} minScore={graphMinScore} rangeStartIndex={rangeStartIndex} selectedIndex={selectedIndex} onStartMove={handleStartMove} onEndMove={handleEndMove} compact />
       </div>
     </div>
   );
@@ -172,7 +167,6 @@ function ProgressionLine({
   selectedIndex,
   onStartMove,
   onEndMove,
-  onSelect,
   compact = false,
 }: {
   timeline: ProgressionPoint[];
@@ -183,7 +177,6 @@ function ProgressionLine({
   selectedIndex: number;
   onStartMove: (index: number) => void;
   onEndMove: (index: number) => void;
-  onSelect: (index: number) => void;
   compact?: boolean;
 }) {
   const edgePadding = compact ? 92 : 64;
@@ -202,7 +195,7 @@ function ProgressionLine({
   const chartTop = compact ? 48 : 18;
   const chartHeight = compact ? 54 : 92;
   const range = Math.max(maxScore - minScore, 1);
-  const points = timeline.map((point, index) => {
+  const points = useMemo(() => timeline.map((point, index) => {
     const x = edgePadding + (index / Math.max(timeline.length - 1, 1)) * (width - edgePadding * 2);
     const y = chartTop + (1 - (scoreValue(point.point) - minScore) / range) * chartHeight;
     const period = formatReportMonth(point.point.reportDate || point.point.label, language);
@@ -212,8 +205,8 @@ function ProgressionLine({
     const delta = score - previousScore;
 
     return { ...point, x, y, score, delta, period, showPeriod: index === 0 || period !== previousPeriod };
-  });
-  const path = points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" ");
+  }), [chartHeight, chartTop, edgePadding, language, minScore, range, timeline, width]);
+  const path = useMemo(() => points.map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`).join(" "), [points]);
   const rangeStartPoint = points.find((point) => point.index === rangeStartIndex || point.hiddenIndexes.includes(rangeStartIndex)) ?? points[0];
   const rangeEndPoint = points.find((point) => point.index === selectedIndex || point.hiddenIndexes.includes(selectedIndex)) ?? points[points.length - 1];
   const isFullRange = rangeStartPoint === points[0] && rangeEndPoint === points[points.length - 1];
@@ -281,20 +274,26 @@ function ProgressionLine({
       }
     }, 0);
   };
-  const handlePointSelect = (index: number) => {
+  const handlePointClick = (index: number, event: MouseEvent<HTMLButtonElement>) => {
     if (interactionRef.current === "long-press" || interactionRef.current === "dragging") {
       interactionRef.current = "idle";
       return;
     }
 
     cancelPointTimers();
+
+    if (event.detail >= 2) {
+      setStartPoint(index);
+      return;
+    }
+
     interactionRef.current = "pending-click";
     clickTimeoutRef.current = setTimeout(() => {
       if (interactionRef.current === "pending-click") {
-        onSelect(index);
+        onEndMove(index);
         interactionRef.current = "idle";
       }
-    }, 210);
+    }, 280);
   };
   const setStartPoint = (index: number) => {
     cancelPointTimers();
@@ -315,9 +314,6 @@ function ProgressionLine({
     longPressTimeoutRef.current = setTimeout(() => {
       setStartPoint(index);
     }, 430);
-  };
-  const handlePointDoubleClick = (index: number) => {
-    setStartPoint(index);
   };
   const cancelPointTimers = () => {
     if (clickTimeoutRef.current) {
@@ -344,7 +340,7 @@ function ProgressionLine({
     const nextPoint = points[Math.min(Math.max(pointIndex + direction, 0), points.length - 1)];
 
     if (nextPoint) {
-      onSelect(nextPoint.index);
+      onEndMove(nextPoint.index);
     }
   };
 
@@ -492,9 +488,8 @@ function ProgressionLine({
                 className={`timeline-point-hit absolute h-14 w-14 -translate-x-1/2 -translate-y-1/2 rounded-full ${dragHandle ? "timeline-point-hit--draggable" : ""}`}
                 style={{ left: point.x, top: point.y }}
                 type="button"
-                onClick={() => handlePointSelect(point.index)}
+                onClick={(event) => handlePointClick(point.index, event)}
                 onPointerDown={dragHandle ? (event) => startHandleDrag(dragHandle, event) : undefined}
-                onDoubleClick={() => handlePointDoubleClick(point.index)}
                 onPointerDownCapture={!dragHandle ? (event) => startLongPress(point.index, event) : undefined}
                 onPointerMoveCapture={!dragHandle ? clearLongPress : undefined}
                 onPointerUpCapture={!dragHandle ? clearLongPress : undefined}
@@ -507,7 +502,7 @@ function ProgressionLine({
               />
             );
           })() : (
-            <ProgressionPointButton point={point.point} index={point.index} x={point.x} language={language} selected={point.index === selectedIndex || point.hiddenIndexes.includes(selectedIndex)} previousPoint={point.previousPoint} onClick={() => onSelect(point.index)} key={`${point.point.fileName}-${point.index}-button`} />
+            <ProgressionPointButton point={point.point} index={point.index} x={point.x} language={language} selected={point.index === selectedIndex || point.hiddenIndexes.includes(selectedIndex)} previousPoint={point.previousPoint} onClick={() => onEndMove(point.index)} key={`${point.point.fileName}-${point.index}-button`} />
           ),
         )}
       </div>
@@ -611,4 +606,8 @@ function nearestTimelinePoint(points: Array<ProgressionPoint & { x: number }>, x
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
+}
+
+function isPositiveScore(score: number): boolean {
+  return score > 0;
 }

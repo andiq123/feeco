@@ -1,13 +1,9 @@
 import type { NextConfig } from "next";
 
-const backendWSOrigin = publicWSOrigin(process.env.NEXT_PUBLIC_BACKEND_WS_URL);
 const connectSources = [
   "'self'",
   "https://vitals.vercel-insights.com",
   "https://vercel.live",
-  "ws://localhost:8080",
-  "ws://127.0.0.1:8080",
-  ...(backendWSOrigin ? [backendWSOrigin] : []),
 ].join(" ");
 
 const scriptSrc = [
@@ -54,18 +50,3 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-
-function publicWSOrigin(value: string | undefined): string {
-  if (!value) {
-    return "";
-  }
-  try {
-    const url = new URL(value);
-    if (url.protocol !== "ws:" && url.protocol !== "wss:") {
-      return "";
-    }
-    return url.origin;
-  } catch {
-    return "";
-  }
-}

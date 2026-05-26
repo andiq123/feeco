@@ -35,9 +35,19 @@ func withCORS(next http.Handler, allowedOrigins map[string]struct{}) http.Handle
 	})
 }
 
+func withSecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		w.Header().Set("Referrer-Policy", "no-referrer")
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("X-Frame-Options", "DENY")
+		next.ServeHTTP(w, r)
+	})
+}
+
 func withAPIKey(next http.Handler, apiKey string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path == "/healthz" || r.URL.Path == "/api/statistics/stream" || r.Method == http.MethodOptions || apiKey == "" {
+		if r.URL.Path == "/healthz" || r.Method == http.MethodOptions || apiKey == "" {
 			next.ServeHTTP(w, r)
 			return
 		}

@@ -7,7 +7,17 @@ import (
 	"time"
 )
 
-var exactDatePattern = regexp.MustCompile(`^\d{2}[./-]\d{2}[./-]\d{4}$`)
+var (
+	exactDatePattern        = regexp.MustCompile(`^\d{2}[./-]\d{2}[./-]\d{4}$`)
+	creditScorePattern      = regexp.MustCompile(`(?is)scor:\s*(\d{3})`)
+	fallbackInquiryPatterns = []*regexp.Regexp{
+		regexp.MustCompile(`(?is)data ultimei interogari.{0,420}?(\d{2}[./-]\d{2}[./-]\d{4})`),
+		regexp.MustCompile(`(?is)ultima interogare.{0,420}?(\d{2}[./-]\d{2}[./-]\d{4})`),
+		regexp.MustCompile(`(?is)cea mai recent[ăa] interogare.{0,420}?(\d{2}[./-]\d{2}[./-]\d{4})`),
+		regexp.MustCompile(`(?is)interogare.{0,120}?(\d{2}[./-]\d{2}[./-]\d{4})`),
+		regexp.MustCompile(`(?is)(\d{2}[./-]\d{2}[./-]\d{4}).{0,120}?interogare`),
+	}
+)
 
 type reportSignals struct {
 	InquiryCount    int
@@ -24,13 +34,13 @@ func detectReportSignals(text string, inquiries []Inquiry) reportSignals {
 	}
 }
 
-func detectInquiries(text string, reportDate string) []Inquiry {
+func detectInquiries(text string, lines []string, reportDate string) []Inquiry {
 	reportTime := parseReportDate(reportDate)
 	if reportTime.IsZero() {
 		reportTime = time.Now()
 	}
 
-	candidates := inquiryCandidates(text)
+	candidates := inquiryCandidates(text, lines)
 	inquiries := make([]Inquiry, 0, len(candidates))
 	seen := map[string]bool{}
 	for _, candidate := range candidates {
@@ -61,8 +71,8 @@ type inquiryCandidate struct {
 	requester string
 }
 
-func inquiryCandidates(text string) []inquiryCandidate {
-	candidates := inquiryTableCandidates(text)
+func inquiryCandidates(text string, lines []string) []inquiryCandidate {
+	candidates := inquiryTableCandidates(lines)
 	if len(candidates) > 0 {
 		return candidates
 	}
@@ -75,8 +85,7 @@ func inquiryCandidates(text string) []inquiryCandidate {
 	return candidates
 }
 
-func inquiryTableCandidates(text string) []inquiryCandidate {
-	lines := usefulLines(text)
+func inquiryTableCandidates(lines []string) []inquiryCandidate {
 	candidates := make([]inquiryCandidate, 0)
 	inInquirySection := false
 
@@ -128,16 +137,8 @@ func isInquiryTableNoise(line string) bool {
 }
 
 func fallbackInquiryDates(text string) []string {
-	patterns := []*regexp.Regexp{
-		regexp.MustCompile(`(?is)data ultimei interogari.{0,420}?(\d{2}[./-]\d{2}[./-]\d{4})`),
-		regexp.MustCompile(`(?is)ultima interogare.{0,420}?(\d{2}[./-]\d{2}[./-]\d{4})`),
-		regexp.MustCompile(`(?is)cea mai recent[ăa] interogare.{0,420}?(\d{2}[./-]\d{2}[./-]\d{4})`),
-		regexp.MustCompile(`(?is)interogare.{0,120}?(\d{2}[./-]\d{2}[./-]\d{4})`),
-		regexp.MustCompile(`(?is)(\d{2}[./-]\d{2}[./-]\d{4}).{0,120}?interogare`),
-	}
-
 	dates := make([]string, 0)
-	for _, pattern := range patterns {
+	for _, pattern := range fallbackInquiryPatterns {
 		for _, match := range pattern.FindAllStringSubmatch(text, -1) {
 			if len(match) > 1 {
 				dates = append(dates, match[1])
@@ -158,8 +159,7 @@ func activeInquiryCount(inquiries []Inquiry) int {
 }
 
 func detectCreditScore(text string) int {
-	scorePattern := regexp.MustCompile(`(?is)scor:\s*(\d{3})`)
-	matches := scorePattern.FindStringSubmatch(text)
+	matches := creditScorePattern.FindStringSubmatch(text)
 	if len(matches) < 2 {
 		return 0
 	}

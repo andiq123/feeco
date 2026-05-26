@@ -75,11 +75,11 @@ function ScoreRangeGuide({ score, language }: { score: number; language: Languag
   const markerPosition = ((safeScore - 300) / 550) * 100;
   const labelPosition = Math.min(90, Math.max(10, markerPosition));
   const ranges = [
-    { range: labels.weakRange, text: labels.weakRangeText, active: score > 0 && score < 580, tone: "danger", width: "50.9%", color: "#ef6a6a" },
-    { range: labels.fairRange, text: labels.fairRangeText, active: score >= 580 && score < 670, tone: "warning", width: "16.4%", color: "#f3b34d" },
-    { range: labels.goodRange, text: labels.goodRangeText, active: score >= 670 && score < 740, tone: "good", width: "12.7%", color: "#44b883" },
-    { range: labels.veryGoodRange, text: labels.veryGoodRangeText, active: score >= 740 && score < 800, tone: "good", width: "10.9%", color: "#2fb5b4" },
-    { range: labels.excellentRange, text: labels.excellentRangeText, active: score >= 800, tone: "good", width: "9.1%", color: "#3777ff" },
+    { range: labels.weakRange, text: labels.weakRangeText, active: score > 0 && score < 580, tone: "danger" },
+    { range: labels.fairRange, text: labels.fairRangeText, active: score >= 580 && score < 670, tone: "warning" },
+    { range: labels.goodRange, text: labels.goodRangeText, active: score >= 670 && score < 740, tone: "good" },
+    { range: labels.veryGoodRange, text: labels.veryGoodRangeText, active: score >= 740 && score < 800, tone: "good" },
+    { range: labels.excellentRange, text: labels.excellentRangeText, active: score >= 800, tone: "good" },
   ] as const;
   const activeRange = ranges.find((item) => item.active);
 
@@ -95,14 +95,12 @@ function ScoreRangeGuide({ score, language }: { score: number; language: Languag
         <p className="numeric rounded-full bg-white/80 px-2.5 py-1 text-xs font-black text-[var(--ink)] shadow-sm">{safeScore}</p>
       </div>
       <div className="relative mt-7 px-1 pb-7">
-        <div className="relative h-3 overflow-hidden rounded-full bg-[var(--line)] shadow-[inset_0_1px_2px_rgba(15,23,42,0.12)]">
-          {ranges.map((item) => (
-            <div className="h-full float-left opacity-85" key={item.range} style={{ width: item.width, backgroundColor: item.color }} />
-          ))}
+        <div className="score-range-track">
+          <div className="score-range-track__shine" />
         </div>
         <div className="absolute top-1.5 -translate-x-1/2 -translate-y-1/2 transition-[left] duration-500 ease-out" style={{ left: `${markerPosition}%` }}>
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-[0_10px_28px_rgba(55,119,255,0.28)] ring-2 ring-[var(--blue)]">
-            <span className="h-3.5 w-3.5 rounded-full bg-[var(--blue)]" />
+          <div className="score-range-marker">
+            <span />
           </div>
         </div>
         <div className="absolute left-1 top-7 text-[0.62rem] font-black text-[var(--muted)]">300</div>

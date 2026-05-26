@@ -53,7 +53,7 @@ func TestWithAPIKeySkipsHealth(t *testing.T) {
 	}
 }
 
-func TestWithAPIKeySkipsStatisticsStream(t *testing.T) {
+func TestWithAPIKeyProtectsStatisticsStream(t *testing.T) {
 	handler := withAPIKey(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}), "secret")
@@ -63,8 +63,29 @@ func TestWithAPIKeySkipsStatisticsStream(t *testing.T) {
 
 	handler.ServeHTTP(response, request)
 
-	if response.Code != http.StatusOK {
-		t.Fatalf("response code = %d, want %d", response.Code, http.StatusOK)
+	if response.Code != http.StatusUnauthorized {
+		t.Fatalf("response code = %d, want %d", response.Code, http.StatusUnauthorized)
+	}
+}
+
+func TestWithSecurityHeadersAddsDefensiveHeaders(t *testing.T) {
+	handler := withSecurityHeaders(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	request := httptest.NewRequest(http.MethodGet, "/api/statistics", nil)
+	response := httptest.NewRecorder()
+
+	handler.ServeHTTP(response, request)
+
+	if value := response.Header().Get("X-Content-Type-Options"); value != "nosniff" {
+		t.Fatalf("X-Content-Type-Options = %q, want nosniff", value)
+	}
+	if value := response.Header().Get("X-Frame-Options"); value != "DENY" {
+		t.Fatalf("X-Frame-Options = %q, want DENY", value)
+	}
+	if value := response.Header().Get("Referrer-Policy"); value != "no-referrer" {
+		t.Fatalf("Referrer-Policy = %q, want no-referrer", value)
 	}
 }
 

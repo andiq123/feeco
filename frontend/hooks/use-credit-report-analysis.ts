@@ -20,6 +20,7 @@ export type AnalysisState = {
   batchReport: BatchCreditReport | null;
   fileName: string;
   fileCount: number;
+  parsingFiles: string[];
   error: string;
   isBackendAvailable: boolean;
   isLoading: boolean;
@@ -32,6 +33,7 @@ export function useCreditReportAnalysis(): AnalysisState {
   const [batchReport, setBatchReport] = useState<BatchCreditReport | null>(null);
   const [fileName, setFileName] = useState("");
   const [fileCount, setFileCount] = useState(0);
+  const [parsingFiles, setParsingFiles] = useState<string[]>([]);
   const [error, setError] = useState("");
   const [isBackendAvailable, setIsBackendAvailable] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,6 +85,7 @@ export function useCreditReportAnalysis(): AnalysisState {
     setBatchReport(null);
     setFileName(nextFileName);
     setFileCount(files.length);
+    setParsingFiles(files.map((file) => file.name));
     setIsLoading(true);
 
     try {
@@ -108,6 +111,7 @@ export function useCreditReportAnalysis(): AnalysisState {
     } catch (err) {
       setError(err instanceof Error ? err.message : "Nu am putut analiza aceste PDF-uri.");
     } finally {
+      setParsingFiles([]);
       setIsLoading(false);
     }
   }
@@ -117,12 +121,13 @@ export function useCreditReportAnalysis(): AnalysisState {
     setBatchReport(null);
     setFileName("");
     setFileCount(0);
+    setParsingFiles([]);
     setError("");
     setIsLoading(false);
     clearStoredAnalysis();
   }
 
-  return { report, batchReport, fileName, fileCount, error, isBackendAvailable, isLoading, analyzeBatch, reset };
+  return { report, batchReport, fileName, fileCount, parsingFiles, error, isBackendAvailable, isLoading, analyzeBatch, reset };
 }
 
 function batchFileLabel(files: File[]): string {

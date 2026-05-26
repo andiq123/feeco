@@ -17,7 +17,7 @@ func AnalyzeText(text string, pages int) Report {
 	lines := usefulLines(normalizedText)
 	accounts := detectAccounts(lines)
 	reportDate := detectReportDate(normalizedText)
-	inquiries := detectInquiries(normalizedText, reportDate)
+	inquiries := detectInquiries(normalizedText, lines, reportDate)
 	signals := detectReportSignals(normalizedText, inquiries)
 	summary := buildSummary(accounts, signals)
 

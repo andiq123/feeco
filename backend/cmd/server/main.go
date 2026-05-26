@@ -23,11 +23,15 @@ func main() {
 	handler := withAPIKey(routes(statsStore), config.APIKey)
 	handler = withRateLimit(handler, config.RateLimitRequests, time.Duration(config.RateLimitWindowSeconds)*time.Second)
 	handler = withCORS(handler, config.AllowedOrigins)
+	handler = withSecurityHeaders(handler)
 
 	server := &http.Server{
 		Addr:              ":" + config.Port,
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      60 * time.Second,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	slog.Info("backend listening", "addr", server.Addr)

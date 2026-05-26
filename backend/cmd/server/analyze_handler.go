@@ -22,7 +22,7 @@ func analyze(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	recordParserUse(r, 1)
+	recordParserRun(r)
 	writeJSON(w, http.StatusOK, report)
 }
 
@@ -40,7 +40,7 @@ func analyzeBatch(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	recordParserUse(r, len(uploadedFiles))
+	recordParserRun(r)
 	writeJSON(w, http.StatusOK, batchReport)
 }
 

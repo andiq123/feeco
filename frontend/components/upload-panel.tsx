@@ -11,6 +11,7 @@ const maxPDFCount = 50;
 type UploadPanelProps = {
   fileName: string;
   fileCount: number;
+  parsingFiles: string[];
   error: string;
   isBackendAvailable: boolean;
   isLoading: boolean;
@@ -19,7 +20,7 @@ type UploadPanelProps = {
   onAnalyze: (files: File[]) => Promise<void>;
 };
 
-export function UploadPanel({ fileName, fileCount, error, isBackendAvailable, isLoading, language, onLanguageChange, onAnalyze }: UploadPanelProps) {
+export function UploadPanel({ fileName, fileCount, parsingFiles, error, isBackendAvailable, isLoading, language, onLanguageChange, onAnalyze }: UploadPanelProps) {
   return (
     <aside className="rise-in mac-panel rounded-[1.75rem] p-4 sm:rounded-[2rem] sm:p-7">
       <BackendToast isBackendAvailable={isBackendAvailable} language={language} />
@@ -28,12 +29,60 @@ export function UploadPanel({ fileName, fileCount, error, isBackendAvailable, is
         <div>
           <BackendInlineWarning isBackendAvailable={isBackendAvailable} language={language} />
           <UploadDropzone isLoading={isLoading} language={language} onAnalyze={onAnalyze} />
+          <DocumentParsingList files={parsingFiles} isLoading={isLoading} language={language} />
           <SelectedFile fileName={fileName} fileCount={fileCount} isLoading={isLoading} language={language} />
           <UploadError error={error} />
         </div>
         <UploadInfoWidgets language={language} />
       </div>
     </aside>
+  );
+}
+
+function DocumentParsingList({ files, isLoading, language }: { files: string[]; isLoading: boolean; language: Language }) {
+  if (!isLoading || files.length === 0) {
+    return null;
+  }
+
+  const labels = copy[language].upload;
+
+  return (
+    <section className="parsing-list mt-3 rounded-[1.35rem] border border-[rgba(50,120,255,0.16)] bg-white/72 p-3 shadow-sm shadow-slate-900/5 backdrop-blur-xl sm:mt-4 sm:p-4" aria-live="polite" aria-busy="true">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-black leading-5 text-[var(--ink)]">{labels.parsingQueueTitle}</p>
+          <p className="mt-0.5 text-xs font-bold leading-5 text-[var(--muted)]">{labels.parsingQueueBody(files.length)}</p>
+        </div>
+        <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-[#edf4ff] text-[var(--blue)]">
+          <Loader2 className="h-4.5 w-4.5 animate-spin" aria-hidden="true" />
+        </div>
+      </div>
+      <div className="mt-3 grid max-h-64 gap-2 overflow-y-auto pr-1">
+        {files.map((file, index) => (
+          <ParsingDocumentRow fileName={file} index={index} label={labels.parsingDocument} key={`${file}-${index}`} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ParsingDocumentRow({ fileName, index, label }: { fileName: string; index: number; label: string }) {
+  return (
+    <article className="parsing-row flex min-w-0 items-center gap-3 rounded-2xl border border-white/80 bg-white/76 px-3 py-2.5" style={{ animationDelay: `${Math.min(index, 10) * 55}ms` }}>
+      <div className="relative grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#edf4ff] text-[var(--blue)]">
+        <FileText className="h-4.5 w-4.5" aria-hidden="true" />
+        <span className="parsing-row__pulse" aria-hidden="true" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-bold leading-5 text-[var(--ink)]">{fileName}</p>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8f0fb]">
+            <span className="parsing-row__bar block h-full rounded-full" />
+          </span>
+          <span className="shrink-0 text-[0.68rem] font-black uppercase tracking-[0.12em] text-[var(--blue)]">{label}</span>
+        </div>
+      </div>
+    </article>
   );
 }
 
@@ -204,7 +253,7 @@ function pdfFilesFromList(fileList: FileList | null): File[] {
 }
 
 function SelectedFile({ fileName, fileCount, isLoading, language }: Pick<UploadPanelProps, "fileName" | "fileCount" | "isLoading" | "language">) {
-  if (!fileName) {
+  if (!fileName || isLoading) {
     return null;
   }
   const labels = copy[language].upload;
